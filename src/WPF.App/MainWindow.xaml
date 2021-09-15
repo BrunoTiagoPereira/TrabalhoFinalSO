@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WPF.App"
-        xmlns:md="clr-namespace:MaterialDesignColors;assembly=MaterialDesignColors"
+        xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
         
         Title="MainWindow" Height="450" Width="800">
@@ -32,8 +32,15 @@
             <TextBlock HorizontalAlignment="Center"  Style="{StaticResource MaterialDesignButtonTextBlock}" Text="Escalonamento Cinema"></TextBlock>
         </StackPanel>
 
-        <StackPanel Grid.Row="3" Grid.RowSpan="2" Grid.Column="2" Grid.ColumnSpan="3">
-            <Button Click="OpenRoomConfigFile" HorizontalAlignment="Center">Carregar Arquivo</Button>
+        <StackPanel Grid.Row="3" Grid.RowSpan="2" Grid.Column="1" Grid.ColumnSpan="2">
+            <Button Click="OpenRoomConfigFile" HorizontalAlignment="Center" Width="150">Salas/Sessões</Button>
+            <TextBlock Text="{Binding RoomConfigLineCount, StringFormat='Lidos - {0}'}" HorizontalAlignment="Center" Margin="0 20 0 0" ></TextBlock>
         </StackPanel>
+        <StackPanel Grid.Row="3" Grid.RowSpan="2" Grid.Column="4" Grid.ColumnSpan="2">
+            <Button Click="OpenCustomersFile" HorizontalAlignment="Center" Width="150">Clientes</Button>
+            <TextBlock Text="{Binding CustomersLineCount, StringFormat='Lidos - {0}'}" HorizontalAlignment="Center" Margin="0 20 0 0" ></TextBlock>
+        </StackPanel>
+
+        <md:Snackbar IsActive="false" x:Name="Snackbar" Width="auto" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="5" Background="{StaticResource PrimaryHueDarkBrush}"></md:Snackbar>
     </Grid>
 </Window>

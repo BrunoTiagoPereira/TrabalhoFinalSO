@@ -10,6 +10,7 @@ namespace WPF.App.Helpers
 {
     public static class Factory
     {
+        //Cria a janela para o usuário enviar o arquivo
         public static OpenFileDialog CreateOpenFileDialog()
         {
             OpenFileDialog openFileDialog = new OpenFileDialog()
@@ -23,6 +24,23 @@ namespace WPF.App.Helpers
 
             return openFileDialog;
         }
+
+        //Cria a stream do arquivo e retorna o leitor da stream do arquivo
+        public static StreamReader CreateFileStream(string path)
+        {
+            //Verifica se arquivo existe no caminho informado e , se não, retorna exceção
+            if (!File.Exists(path))
+                throw new FileNotFoundException($"Arquivo '{path}' não encontrado.");
+
+            //Cria uma stream do arquivo informado
+            var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+            //Leitor da stream do arquivo
+            var streamReader = new StreamReader(fileStream);
+
+            return streamReader;
+        }
+
 
     }
 }
