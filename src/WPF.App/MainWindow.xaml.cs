@@ -260,8 +260,6 @@ namespace WPF.App
 
         }
 
-        
-
         #endregion
 
 
