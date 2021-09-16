@@ -69,6 +69,7 @@ namespace WPF.App
 
             Sessions = new List<Session>();
             Customers = new List<Customer>();
+
             Snackbar.MessageQueue = new SnackbarMessageQueue(TimeSpan.FromSeconds(3));
         }
 
@@ -144,7 +145,6 @@ namespace WPF.App
         
 
         #endregion
-
 
 
 

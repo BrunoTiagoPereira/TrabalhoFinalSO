@@ -8,6 +8,11 @@ namespace WPF.App.Entities
 {
     public class Session
     {
+
+        public Session()
+        {
+            MovieRoom = new MovieRoom();
+        }
         public MovieRoom MovieRoom { get; set; }
 
         public DateTime StartTime { get; set; }     
