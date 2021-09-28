@@ -29,6 +29,7 @@ namespace WPF.App.Views
     public partial class SessionPreview : UserControl
     {
 
+
         private SolidColorBrush _blue = new (Color.FromRgb(52, 140, 235));
         private SolidColorBrush _red = new (Color.FromRgb(235, 52, 64));
         private SolidColorBrush _green = new (Color.FromRgb(52, 235, 134));
@@ -49,7 +50,7 @@ namespace WPF.App.Views
 
 
             int columns = 10;
-            int rows = 10;
+            int rows = 20;
 
             CreateRoom(columns, rows);
 
@@ -61,10 +62,10 @@ namespace WPF.App.Views
 
         private void CreateRoom(int columns, int rows)
         {
-            int width = 800;
-            int height = 450;
+            double width = 800;
+            double height = 450;
 
-            double ellipseWidth =  width / columns;
+            double ellipseWidth = width / columns;
             double ellipseHeight = height / rows;   
 
             string prefix;
@@ -87,15 +88,9 @@ namespace WPF.App.Views
                 }
 
             }
+
            
         }
-
-        private int LetterToNumber(char letter)
-        {
-            int index = char.ToUpper(letter) - 64;
-            return index;
-        }
-
 
         private string NumberToString(int number)
 

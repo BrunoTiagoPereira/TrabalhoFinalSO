@@ -33,24 +33,7 @@
            <RowDefinition></RowDefinition>
         </Grid.RowDefinitions>
 
-        <Frame Grid.ColumnSpan="7" Grid.RowSpan="7" Source="Views/SessionPreview.xaml"></Frame>
-        <!--<StackPanel Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="3">
-            <TextBlock HorizontalAlignment="Center"  Style="{StaticResource MaterialDesignButtonTextBlock}" Text="Escalonamento Cinema"></TextBlock>
-        </StackPanel>
-
-        <StackPanel Grid.Row="3" Grid.RowSpan="2" Grid.Column="1" Grid.ColumnSpan="2">
-            <Button Click="OpenRoomConfigFile" HorizontalAlignment="Center" Width="150">Salas/Sessões</Button>
-            <TextBlock Text="{Binding RoomConfigLineCount, StringFormat='Lidos - {0}'}" HorizontalAlignment="Center" Margin="0 20 0 0" ></TextBlock>
-        </StackPanel>
-        <StackPanel Grid.Row="3" Grid.RowSpan="2" Grid.Column="4" Grid.ColumnSpan="2">
-            <Button Click="OpenCustomersFile" HorizontalAlignment="Center" Width="150">Clientes</Button>
-            <TextBlock Text="{Binding CustomersLineCount, StringFormat='Lidos - {0}'}" HorizontalAlignment="Center" Margin="0 20 0 0" ></TextBlock>
-        </StackPanel>
-
-        <StackPanel Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="5">
-            <Button Width="150">Executar</Button>
-        </StackPanel>-->
-
-        <md:Snackbar IsActive="false" x:Name="Snackbar" Width="auto" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="5" Background="{StaticResource PrimaryHueDarkBrush}"></md:Snackbar>
+        <ContentControl Content="{Binding ActiveView}" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="7" Grid.RowSpan="7"></ContentControl>
+        <md:Snackbar IsActive="false" x:Name="Snackbar" Width="auto" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="5" Background="{Binding NotificationColor}"></md:Snackbar>
     </Grid>
 </Window>
