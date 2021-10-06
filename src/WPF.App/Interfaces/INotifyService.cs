@@ -7,8 +7,11 @@ using WPF.App.Entities;
 
 namespace WPF.App.Interfaces
 {
-    public interface INotifiyService
+    //Interface para o serviço de notificação
+    public interface INotifyService
     {
+        //Método de Alerta
         void Alert(Notification notification);
+
     }
 }

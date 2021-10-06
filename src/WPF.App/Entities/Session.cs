@@ -1,20 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace WPF.App.Entities
 {
+    //Sessão
     public class Session
     {
+        //Identificador
+        public Guid Id { get; set; }
 
-        public Session()
+        //Coleção de objetos cadeira observaveis 
+        public ObservableCollection<Chair> Chairs { get; set; }
+
+        //Lista de clientes
+        public List<Customer> Customers { get; set; }
+
+        //Data de inicio
+        public DateTime StartTime { get; set; }
+
+        public bool HasCustomers
         {
-            MovieRoom = new MovieRoom();
+            get => Customers?.Count > 0;
         }
-        public MovieRoom MovieRoom { get; set; }
-
-        public DateTime StartTime { get; set; }     
     }
 }

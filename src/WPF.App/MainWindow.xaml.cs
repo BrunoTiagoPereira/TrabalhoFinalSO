@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using MaterialDesignThemes.Wpf;
 using WPF.App.Interfaces;
@@ -43,10 +44,9 @@ namespace WPF.App
             DataContext = this;
             Snackbar.MessageQueue = new SnackbarMessageQueue(TimeSpan.FromSeconds(3));
 
+            
+
         }
-
-
-
 
     }
 }

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
+using WPF.App.Entities;
 using WPF.App.Interfaces;
 using WPF.App.Services;
 using WPF.App.Views;
@@ -32,7 +33,8 @@ namespace WPF.App
             services.AddTransient<Menu>();
             services.AddTransient<SessionPreview>();
             services.AddTransient<INavigationService<IBaseView>,NavigationService>();
-            services.AddTransient<INotifiyService,NotifyService>();
+            services.AddTransient<INotifyService,NotifyService>();
+            services.AddSingleton<IReport, Report>();
         }
 
         private void OnStartup(object sender, StartupEventArgs e)

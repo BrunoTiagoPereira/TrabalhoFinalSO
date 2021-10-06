@@ -25,8 +25,27 @@ namespace WPF.App.Helpers
             return openFileDialog;
         }
 
+        //Cria a janela para o usuário criar o arquivo
+        public static SaveFileDialog CreateSaveFileDialog()
+        {
+            SaveFileDialog createFileDialog = new SaveFileDialog()
+            {
+                InitialDirectory = "c:\\",
+                Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*",
+                FilterIndex = 2,
+                RestoreDirectory = true,
+                Title = "Salvar Arquivo Texto",
+                FileName = "Relatório Clientes Cinema",
+                DefaultExt = ".txt"
+
+
+            };
+
+            return createFileDialog;
+        }
+
         //Cria a stream do arquivo e retorna o leitor da stream do arquivo
-        public static StreamReader CreateFileStream(string path)
+        public static StreamReader CreateStreamReaderFromFile(string path)
         {
             //Verifica se arquivo existe no caminho informado e , se não, retorna exceção
             if (!File.Exists(path))
@@ -39,6 +58,22 @@ namespace WPF.App.Helpers
             var streamReader = new StreamReader(fileStream);
 
             return streamReader;
+        }
+
+        //Cria a stream do arquivo e retorna o leitor da stream do arquivo
+        public static StreamWriter CreateStreamWriterFromFile(string path)
+        {
+            //Verifica se arquivo existe no caminho informado e , se não, retorna exceção
+            if (!File.Exists(path))
+                throw new FileNotFoundException($"Arquivo '{path}' não encontrado.");
+
+            //Cria uma stream do arquivo informado
+            var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+            //Escritor da stream do arquivo
+            var streamWriter = new StreamWriter(fileStream);
+
+            return streamWriter;
         }
 
 

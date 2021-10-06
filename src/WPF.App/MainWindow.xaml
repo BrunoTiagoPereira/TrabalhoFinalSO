@@ -34,6 +34,9 @@
         </Grid.RowDefinitions>
 
         <ContentControl Content="{Binding ActiveView}" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="7" Grid.RowSpan="7"></ContentControl>
-        <md:Snackbar IsActive="false" x:Name="Snackbar" Width="auto" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="5" Background="{Binding NotificationColor}"></md:Snackbar>
+
+
+
+<md:Snackbar IsActive="false" x:Name="Snackbar" Width="auto" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="5" Background="{Binding NotificationColor}"></md:Snackbar>
     </Grid>
 </Window>

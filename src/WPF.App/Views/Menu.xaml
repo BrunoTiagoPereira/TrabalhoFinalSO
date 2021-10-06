@@ -8,42 +8,77 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid Background="AliceBlue">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition></ColumnDefinition>
-            <ColumnDefinition></ColumnDefinition>
-            <ColumnDefinition></ColumnDefinition>
-            <ColumnDefinition></ColumnDefinition>
-            <ColumnDefinition></ColumnDefinition>
-            <ColumnDefinition></ColumnDefinition>
-            <ColumnDefinition></ColumnDefinition>
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition></RowDefinition>
-            <RowDefinition></RowDefinition>
-            <RowDefinition></RowDefinition>
-            <RowDefinition></RowDefinition>
-            <RowDefinition></RowDefinition>
-            <RowDefinition></RowDefinition>
-            <RowDefinition></RowDefinition>
-        </Grid.RowDefinitions>
+     
+        <materialDesign:DrawerHost x:Name="Host" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="7" Grid.RowSpan="7">
+            <materialDesign:DrawerHost.LeftDrawerContent>
+                <StackPanel Margin="16">
+                    <ListView>
+                        <ListViewItem>
+                            <TextBlock>Sessões Carregadas</TextBlock>
+                        </ListViewItem>
+                    </ListView>
+                    <ListView ItemsSource="{Binding Sessions}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <Button IsEnabled="{Binding HasCustomers}" HorizontalAlignment="Center" Tag="{Binding Id}" Click="NavigateToSession">
+                                        <TextBlock Text="{Binding StartTime, StringFormat=HH:mm}" ></TextBlock>
+                                    </Button>
+                                </StackPanel>
+                               
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    <ListView>
+                        <ListViewItem>
+                            <Button  Click="GenerateReport">
+                                <TextBlock Text="Gerar Relatório"></TextBlock>
+                            </Button>
+                        </ListViewItem>
+                    </ListView>
+                </StackPanel>
+            </materialDesign:DrawerHost.LeftDrawerContent>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="3">
-            <TextBlock HorizontalAlignment="Center"  Style="{StaticResource MaterialDesignButtonTextBlock}" Text="Escalonamento Cinema"></TextBlock>
-        </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="3">
+                    <TextBlock HorizontalAlignment="Center"  Style="{StaticResource MaterialDesignButtonTextBlock}" Text="Escalonamento Cinema"></TextBlock>
+                </StackPanel>
 
-        <StackPanel Grid.Row="3" Grid.RowSpan="2" Grid.Column="1" Grid.ColumnSpan="2">
-            <Button Click="OpenRoomConfigFile" HorizontalAlignment="Center" Width="150">Salas/Sessões</Button>
-            <TextBlock Text="{Binding RoomConfigLineCount, StringFormat='Lidos - {0}'}" HorizontalAlignment="Center" Margin="0 20 0 0" ></TextBlock>
-        </StackPanel>
-        <StackPanel Grid.Row="3" Grid.RowSpan="2" Grid.Column="4" Grid.ColumnSpan="2">
-            <Button Click="OpenCustomersFile" HorizontalAlignment="Center" Width="150">Clientes</Button>
-            <TextBlock Text="{Binding CustomersLineCount, StringFormat='Lidos - {0}'}" HorizontalAlignment="Center" Margin="0 20 0 0" ></TextBlock>
-        </StackPanel>
+                <StackPanel Grid.Row="3" Grid.RowSpan="2" Grid.Column="1" Grid.ColumnSpan="2">
+                    <Button Click="OpenRoomConfigFile" HorizontalAlignment="Center" Width="150">Salas/Sessões</Button>
+                    <TextBlock Text="{Binding RoomConfigLineCount, StringFormat='Lidos - {0}'}" HorizontalAlignment="Center" Margin="0 20 0 0" ></TextBlock>
+                </StackPanel>
+                <StackPanel Grid.Row="3" Grid.RowSpan="2" Grid.Column="4" Grid.ColumnSpan="2">
+                    <Button Click="OpenCustomersFile" HorizontalAlignment="Center" Width="150">Clientes</Button>
+                    <TextBlock Text="{Binding CustomersLineCount, StringFormat='Lidos - {0}'}" HorizontalAlignment="Center" Margin="0 20 0 0" ></TextBlock>
+                </StackPanel>
 
-        <StackPanel Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="5">
-            <Button Width="150">Executar</Button>
-        </StackPanel>
+                <StackPanel Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="5">
 
-
+                    <Button IsEnabled="{Binding IsContentLoaded}" 
+                            Command="{x:Static materialDesign:DrawerHost.OpenDrawerCommand}"
+                            CommandParameter="{x:Static Dock.Left}" Width="200">Mostrar Resultados</Button>
+                </StackPanel>
+            </Grid>
+        </materialDesign:DrawerHost>
+       
     </Grid>
 </UserControl>

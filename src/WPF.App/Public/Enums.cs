@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace WPF.App.Public
 {
+    //Tipos de alerta
     public enum  AlertType
     {
         Success = 1,

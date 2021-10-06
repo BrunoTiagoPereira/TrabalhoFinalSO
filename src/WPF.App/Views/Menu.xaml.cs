@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,7 +27,8 @@ namespace WPF.App.Views
     public partial class Menu : UserControl, IBaseView
     {
         private readonly INavigationService<IBaseView> _navigationService;
-        private readonly INotifiyService _notifiyService;
+        private readonly INotifyService _notifiyService;
+        private readonly IReport _report;
         public object Parameter { get; set; }
         public Type TypeScreen { get; set; }
 
@@ -34,6 +36,8 @@ namespace WPF.App.Views
 
         public List<Customer> Customers { get; set; }
         public List<Session> Sessions { get; set; }
+        public int RowDimension { get; set; }
+        public int ColumnDimension { get; set; }
 
         #endregion
 
@@ -60,10 +64,17 @@ namespace WPF.App.Views
             "RoomConfigLineCount", typeof(int), typeof(Menu), new PropertyMetadata(0));
 
 
+        public static readonly DependencyProperty IsContentLoadedProperty = DependencyProperty.Register(
+            "IsContentLoaded", typeof(bool), typeof(Menu), new PropertyMetadata(false));
 
+        public bool IsContentLoaded
+        {
+            get { return (bool) GetValue(IsContentLoadedProperty); }
+            set { SetValue(IsContentLoadedProperty, value); }
+        }
         #endregion
 
-        public Menu(INavigationService<IBaseView> navigationService, INotifiyService notifiyService)
+        public Menu(INavigationService<IBaseView> navigationService, INotifyService notifyService, IReport report)
         {
           
             InitializeComponent();
@@ -72,9 +83,13 @@ namespace WPF.App.Views
             Customers = new List<Customer>();
 
             _navigationService = navigationService;
-            _notifiyService = notifiyService;
+            _notifiyService = notifyService;
+            _report = report;
 
             DataContext = this;
+
+
+        
 
         }
 
@@ -89,7 +104,7 @@ namespace WPF.App.Views
             RoomConfigLineCount = 0;
 
             //Pegando o caminho do arquivo
-            string filePath = GetFileFromExplorer();
+            string filePath = Util.GetFileFromExplorer();
             string line;
             List<string> roomConfiguration = new List<string>();
 
@@ -97,7 +112,7 @@ namespace WPF.App.Views
             if (filePath == null) return;
 
             //Leitor de arquivo
-            using (var reader = Factory.CreateFileStream(filePath))
+            using (var reader = Factory.CreateStreamReaderFromFile(filePath))
             {
                 //Enquanto houver linha
                 while ((line = await reader.ReadLineAsync()) != null)
@@ -120,7 +135,7 @@ namespace WPF.App.Views
             CustomersLineCount = 0;
 
             //Pegando o caminho do arquivo
-            string filePath = GetFileFromExplorer();
+            string filePath = Util.GetFileFromExplorer();
             string line;
             List<string> customers = new List<string>();
 
@@ -128,7 +143,7 @@ namespace WPF.App.Views
             if (filePath == null) return;
 
             //Leitor de arquivo
-            using (var reader = Factory.CreateFileStream(filePath))
+            using (var reader = Factory.CreateStreamReaderFromFile(filePath))
             {
                 //Enquanto houver linha
                 while ((line = await reader.ReadLineAsync()) != null)
@@ -145,36 +160,9 @@ namespace WPF.App.Views
         }
 
 
-
-        #region Execution
-
-
-
-        #endregion
-
-
-
         #region Helpers
 
-        //Método para pegar o caminho do arquivo
-        private string GetFileFromExplorer()
-        {
-            //Variável para receber o caminho do arquivo
-            string filePath = null;
-
-            //Abre a janela para informar o arquivo
-            var openFileDialog = Factory.CreateOpenFileDialog();
-
-            //Verifica se o arquivo foi informado 
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                //Se o arquivo for informado, define o valor da variável com o caminho do arquivo informado
-                filePath = openFileDialog.FileName;
-
-            //Retorna o caminho do arquivo
-            return filePath;
-        }
-
-
+        
 
         //Método para importar as configurações de Sala/Sessões
         private async Task ImportRoomConfig(List<string> roomConfiguration)
@@ -188,11 +176,8 @@ namespace WPF.App.Views
                 
             }
                
-
             //Modelo: 10x20                     #filas x cadeiras
             //        14:30, 17:00, 20:30       #sessões
-
-
             Session session;
 
             //Variáveis armazenando as informações de dimensão e de sessões
@@ -202,11 +187,9 @@ namespace WPF.App.Views
             int rows = int.Parse(dimensionConfig[0]);
             int columns = int.Parse(dimensionConfig[1]);
 
-            //Criando entidade de Sala
-            var movieRoom = new MovieRoom()
-            {
-                Room = new Seat[rows, columns],
-            };
+
+            RowDimension = rows;
+            ColumnDimension = columns;
 
             //Passa em cada sessão informada
             foreach (var sessionStartTime in sessionsConfigs)
@@ -214,7 +197,7 @@ namespace WPF.App.Views
                 //Criando entidade de Sessão
                 session = new Session
                 {
-                    MovieRoom = movieRoom,
+                    Id = Guid.NewGuid(),
                     StartTime = DateTime.Parse(sessionStartTime)
                 };
 
@@ -222,6 +205,12 @@ namespace WPF.App.Views
                 Sessions.Add(session);
 
             }
+
+            //Alerta que a configuração foi importada
+            _notifiyService.Alert(new Notification { Type = AlertType.Success, Text = $"Configuração importada!" });
+
+            //Verificando a importação
+            await CheckImport();
 
         }
 
@@ -232,6 +221,7 @@ namespace WPF.App.Views
             var erro = new StringBuilder();
             string[] customerInfo;
 
+            //Variável auxiliar de Cliente
             Customer customer;
 
             //Passa pelas linhas de clientes
@@ -255,8 +245,8 @@ namespace WPF.App.Views
                     SelectedSeat = customerInfo[0],
                     SelectedSession = DateTime.Parse(customerInfo[1]),
                     Sequence = customerInfo[2],
-                    OnUnavaibleSeat = Customer.GetOnUnavaibleSeatBehaviorFromIdentifer(customerInfo[3]),
-                    ArrivalTime = i,
+                    OnUnavailableSeat = Customer.GetOnUnavailableSeatBehaviorFromIdentifier(customerInfo[3]),
+                    ArrivalTime = i + 1,
                     CustomerType = Customer.GetCustomerTypeFromIdentifier(customerInfo[4]),
                     EstimatedTime = int.Parse(customerInfo[5])
 
@@ -268,13 +258,110 @@ namespace WPF.App.Views
 
             //Verifica se existe algum erro e ,se sim, retorna as mensagens de erro
             if (!string.IsNullOrWhiteSpace(erro.ToString()))
-                _notifiyService.Alert(new Notification{Type = AlertType.Error, Text = $"Erros nos clientes: {erro.ToString()}" });
+            {
+                _notifiyService.Alert(new Notification { Type = AlertType.Error, Text = $"Erros nos clientes: {erro.ToString()}" });
+                
+                return;
+            }
 
+            //Alerta que os clientes foram importados
+            _notifiyService.Alert(new Notification { Type = AlertType.Success, Text = $"Clientes importados!" });
+            
+            //Atualiza o contador de linhas de Clientes
+            CustomersLineCount = Customers.Count;
+
+            //Verificando a importação 
+            await CheckImport();
+        }
+
+        //Verificar a importação
+        private async Task CheckImport()
+        {
+            
+            //Se ainda possuir sessões ou clientes , definir arquivo como não carregado ainda
+            if (Customers.Count == 0 || Sessions.Count == 0)
+            {
+                IsContentLoaded = false;
+                return;
+            }
+            
+            await MergeCustomerSessions();
+
+            _report.Sessions = this.Sessions;
+
+            await _report.Build();
+
+            IsContentLoaded = true;
+        }
+
+        public async Task MergeCustomerSessions()
+        {
+            await Task.Run(() =>
+            {
+                foreach (var session in Sessions)
+                {
+                    var sessionCustomers = Customers.Where(c => c.SelectedSession == session.StartTime).ToList();
+
+                    session.Customers = sessionCustomers;
+
+                    session.Chairs = CreateChairs(ColumnDimension, RowDimension);
+                }
+            });
+
+        }
+
+        private ObservableCollection<Chair> CreateChairs(int columns, int rows)
+        {
+            var chairs = new ObservableCollection<Chair>();
+            double width = 800;
+            double height = 450;
+
+            double ellipseWidth = width / columns;
+            double ellipseHeight = height / rows;
+
+            string prefix;
+
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < columns; j++)
+                {
+                    prefix = ((j + 1) > 9) ? "" : "0";
+                    chairs.Add(new Chair
+                    {
+                        Identifier = $"{Util.NumberToString(i + 1)}{prefix}{j + 1}",
+                        Width = ellipseWidth,
+                        Height = ellipseHeight,
+                        Color = Util.Blue,
+                        Top = i * (ellipseHeight + 10),
+                        Left = j * (ellipseWidth + 10),
+                        IsAvailable = true,
+                    });
+
+                }
+
+            }
+
+            return chairs;
+
+        }
+        #endregion
+
+        private async void NavigateToSession(object sender, RoutedEventArgs e)
+        {
+            var sessionId = (Guid)((Button)sender).Tag;
+            var session = Sessions.Find(s => s.Id == sessionId);
+
+            var preview = new MovieTemplate(RowDimension, ColumnDimension, session,  _notifiyService);
+            preview.Show();
+
+            await preview.Execute();
 
 
         }
 
-        #endregion
-
+        private async void GenerateReport(object sender, RoutedEventArgs e)
+        {
+            await _report.Generate();
+        }
     }
 }
