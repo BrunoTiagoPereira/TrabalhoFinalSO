@@ -27,12 +27,12 @@ namespace WPF.App.Entities
         public List<StepLog> Logs { get; set; }
 
         //Lista de sessões
-        public List<Session> Sessions { get; set; }
+        private List<Session> _sessions;
 
         //Lista de linhas de relatório
         public List<string> ReportLines { get; set; }
 
-        //
+        //Porcentagem garantidade para clientes meia
         private const decimal HalfPricePercentage = 0.4M;
 
         //Construtor
@@ -49,7 +49,27 @@ namespace WPF.App.Entities
 
         }
 
-        //Gerar arquivo de relatório
+
+        /// <summary>
+        /// Executa o algoritmo do relatório
+        /// </summary>
+        /// <param name="sessions">Sessão com os clientes</param>
+        public void Build(List<Session> sessions)
+        {
+
+            //Ordena as sessões por ordem de chegada e executa o algoritmo para clientes premium, meia entrada e normais
+            _sessions = sessions.OrderBy(s => s.StartTime).ToList();
+            foreach (var session in sessions)
+            {
+                PremiumCustomers(session);
+                HalfPriceCustomers(session);
+                RegularCustomers(session);
+
+            }
+        }
+        /// <summary>
+        /// Gerar arquivo de relatório
+        /// </summary>
         public async Task Generate()
         {
             //Criando arquivo
@@ -85,72 +105,96 @@ namespace WPF.App.Entities
 
         }
 
-        public async Task Build()
-        {
-            var sessions = Sessions.OrderBy(s => s.StartTime);
-            foreach (var session in sessions)
-            {
-                PremiumCustomers(session);
-                HalfPriceCustomers(session);
-                RegularCustomers(session);
 
-            }
-        }
-
+        #region Execution
+        /// <summary>
+        /// Executa os clientes regulares
+        /// </summary>
+        /// <param name="session">Sessão de referência</param>
         private void RegularCustomers(Session session)
         {
+            //Busca os clientes regulares
             var regularCustomers = session.Customers.Where(c => c.CustomerType == CustomerType.Regular).ToList();
 
             if (!regularCustomers.Any()) return;
 
+            //Preenche a fila de execução com os clientes regulares
             FillExecutionQueue(regularCustomers);
 
+            //Verifica para cada cliente se os assentos selecionados existem
             CheckIfSeatsExist(session);
 
+            //Executa cada passo dos clientes
             ExecuteCustomersSteps(session, false);
         }
-
+        /// <summary>
+        /// Executa os clientes de meia entrada
+        /// </summary>
+        /// <param name="session">Sessão de referência</param>
         private void HalfPriceCustomers(Session session)
         {
+            //Busca os clientes de meia entrada
             var halfPriceCustomers = session.Customers.Where(c => c.CustomerType == CustomerType.HalfPrice).ToList();
 
             if (!halfPriceCustomers.Any()) return;
 
+            //Preenche a fila de execução com os clientes de meia entrada
             FillExecutionQueue(halfPriceCustomers);
 
+            //Verifica para cada cliente se os assentos selecionados existem
             CheckIfSeatsExist(session);
 
+            //Executa cada passo dos clientes
             ExecuteCustomersSteps(session, true);
         }
 
+        /// <summary>
+        /// Executa os clientes de meia entrada
+        /// </summary>
+        /// <param name="session">Sessão de referência</param>
         public void PremiumCustomers(Session session)
         {
-
+            //Busca os clientes premium
             var premiumCustomers = session.Customers.Where(c => c.CustomerType == CustomerType.Premium).ToList();
 
             if (!premiumCustomers.Any()) return;
 
+            //Preenche a fila de execução com os clientes premium
             FillExecutionQueue(premiumCustomers);
 
+            //Verifica para cada cliente se os assentos selecionados existem
             CheckIfSeatsExist(session);
 
-            ExecuteCustomersSteps(session,false);
+            //Executa cada passo dos clientes
+            ExecuteCustomersSteps(session, false);
 
 
         }
 
+        /// <summary>
+        /// Executa os passos dos clientes
+        /// </summary>
+        /// <param name="session">sessão de referência</param>
+        /// <param name="validateHalfPricePercentage">vailidar porcentagem garantidade de clientes de meia entrada</param>
         private void ExecuteCustomersSteps(Session session, bool validateHalfPricePercentage)
         {
-            var chairsCount = session.Chairs.Count;
-            var sessionIndex = Sessions.IndexOf(session);
+            
+            var seatsCount = session.Seats.Count;
+            var sessionIndex = _sessions.IndexOf(session);
             bool moreThanMaximumHalfPrice;
+
+
+            //Enquanto tiver elementos na fila de execução continua
             while (_executionQueue.Count > 0)
             {
-                moreThanMaximumHalfPrice = (decimal)Sessions[sessionIndex].Chairs.Count(c => !c.IsAvailable) / chairsCount > HalfPricePercentage;
+                //Porcentagem de assentos confirmados na sessão
+                moreThanMaximumHalfPrice = (decimal)_sessions[sessionIndex].Seats.Count(c => !c.IsAvailable) / seatsCount > HalfPricePercentage;
 
+                //Caso precise validar, estiver executando os clientes de meia entrada e estiverem acima de 40% modifica a fila de execução
                 if (validateHalfPricePercentage && moreThanMaximumHalfPrice)
                     return;
 
+                //Executa os passos do cliente na psição 1
                 CheckSteps(_executionQueue[0], session);
             }
 
@@ -158,12 +202,19 @@ namespace WPF.App.Entities
 
         }
 
+        /// <summary>
+        /// Executa os passos do cliente
+        /// </summary>
+        /// <param name="customer">Cliente</param>
+        /// <param name="session">Sessão de referência</param>
         private void CheckSteps(Customer customer, Session session)
         {
 
+            //Remove o cliente da fila de execução
             _executionQueue.Remove(customer);
 
             char[] steps;
+            bool seatIsUnavailableAndCustomerGaveUp = false;
 
             steps = customer.Sequence.ToUpper().ToCharArray();
 
@@ -171,100 +222,148 @@ namespace WPF.App.Entities
             {
                 switch (step)
                 {
+                    //Na consulta verifica se o assento está disponível
                     case 'C':
-                        CheckIfSeatIsAvailable(customer, session);
+                        //Caso o assento esteja indisponível e o cliente desistir para a execução dos passos
+                        seatIsUnavailableAndCustomerGaveUp =  !CheckIfSeatIsAvailable(customer, session);
                         break;
+                    //Seleciona o assento
                     case 'S':
                         ConfirmSeat(customer, session);
                         break;
+                    //Paga o assento
                     case 'P':
-                        Pay(customer,session);
+                        Pay(customer, session);
                         break;
+                    //Cancela a execução do cliente
                     case 'X':
                         CancelCustomer(customer, session);
                         break;
-                    
+
                 }
 
-                if (step == 'X')
+                if (step == 'X' || seatIsUnavailableAndCustomerGaveUp)
                     break;
             }
 
+            //Adiciona o log do cliente e calcula se ele está novamente na fila
             Logs.Add(new StepLog
             {
                 Customer = customer,
-                Session =  session,
+                Session = session,
                 Start = _currentTime,
                 Finish = _currentTime + customer.EstimatedTime,
                 TryCounter = GetTryCounterFromCustomer(customer)
 
             });
 
+            //Adiciona no tempo de execução o tempo do cliente
             _currentTime += customer.EstimatedTime;
 
-            
+
 
         }
 
+        /// <summary>
+        /// Pagamento do cliente, deixa a cadeira indisponível
+        /// </summary>
+        /// <param name="customer">Cliente</param>
+        /// <param name="session">sessão de referência</param>
         private void Pay(Customer customer, Session session)
         {
-            var chair = session.Chairs.First(x => x.Identifier == customer.SelectedSeat);
-            var chairIndex = session.Chairs.IndexOf(chair);
-            var sessionIndex = Sessions.IndexOf(session);
+            //Busca a cadeira do cliente e a sessão
+            var seat = session.Seats.First(x => x.Identifier == customer.SelectedSeat);
+            var seatIndex = session.Seats.IndexOf(seat);
+            var sessionIndex = _sessions.IndexOf(session);
 
-            chair.IsAvailable = false;
-            chair.Customer = customer;
+            //Muda o status na sessão e adiciona no relatório a informação
+            seat.IsAvailable = false;
+            seat.Customer = customer;
+            seat.Color = Util.Red;
 
-            Sessions[sessionIndex].Chairs[chairIndex] = chair;
+            _sessions[sessionIndex].Seats[seatIndex] = seat;
             ReportLines.Add($"Cliente {customer.ArrivalTime} {customer.SelectedSeat} {session.StartTime:HH:mm} confirmou.");
         }
-
+        /// <summary>
+        /// Cancela a execução do cliente
+        /// </summary>
+        /// <param name="customer">Cliente</param>
+        /// <param name="session">sessão de referência</param>
         private void CancelCustomer(Customer customer, Session session)
         {
+            //Adiciona a linha no relatório
             ReportLines.Add($"Cliente {customer.ArrivalTime} {customer.SelectedSeat} {session.StartTime:HH:mm} não confirmou.");
 
         }
-
-
+        /// <summary>
+        /// Seleciona o assento
+        /// </summary>
+        /// <param name="customer">Cliente</param>
+        /// <param name="session">sessão de referência</param>
         private void ConfirmSeat(Customer customer, Session session)
         {
-           
+
 
         }
+        #endregion
 
-        private void CheckIfSeatIsAvailable(Customer customer, Session session)
+
+
+        #region Util
+        /// <summary>
+        /// Verifica se o assento está disponível
+        /// </summary>
+        /// <param name="customer"></param>
+        /// <param name="session"></param>
+        private bool CheckIfSeatIsAvailable(Customer customer, Session session)
         {
-            var isAvailable = session.Chairs.First(chair => chair.Identifier == customer.SelectedSeat).IsAvailable;
+            //Verifica se o assento está disponível
+            var isAvailable = session.Seats.First(Seat => Seat.Identifier == customer.SelectedSeat).IsAvailable;
 
 
             if (isAvailable)
-                return;
+                return true;
 
 
+            //Se não tiver disponível e o cliente quiser tentar outro
             if (customer.OnUnavailableSeat == OnUnavailableSeatBehavior.TryAnother)
             {
-                TryAnotherChair(customer,session);
-                return;
+                return TryAnotherSeat(customer, session);
+                
             }
-
+            //Adiciona no relatório que o cliente desistiu
             ReportLines.Add($"Cliente {customer.ArrivalTime} {customer.SelectedSeat} {session.StartTime:HH:mm} desistiu.");
+
+            return false;
         }
 
-        private void TryAnotherChair(Customer customer, Session session)
+        private bool TryAnotherSeat(Customer customer, Session session)
         {
-            var availableChair = GetNextAvailableChair(session);
+            //Verifica a próxima cadeira disponível
+            var availableSeat = GetNextAvailableSeat(session);
 
-            //Não há mais cadeiras disponíveis
-            if (availableChair == null)
-                return;
+            //Se tiver cadeiras disponíveis ele seleciona essa cadeira para o cliente e insere o cliente novamente na fila pra executar
+            if (availableSeat != null)
+            {
+                customer.SelectedSeat = availableSeat.Identifier;
+                _executionQueue.Insert(0, customer);
+            }
+            return false;
 
-            customer.SelectedSeat = availableChair.Identifier;
-            _executionQueue.Insert(0, customer);
         }
 
+        /// <summary>
+        /// Retorna a próxima cadeira disponível
+        /// </summary>
+        /// <param name="session"></param>
+        /// <returns></returns>
+        private Seat GetNextAvailableSeat(Session session)
+        {
+            return session.Seats.FirstOrDefault(c => c.IsAvailable);
+        }
         private int GetTryCounterFromCustomer(Customer customer)
         {
-            var tryCounter = 0; 
+            var tryCounter = 0;
 
             //Verifica as tentativas desse cliente 
             if (Logs.Exists(l => l.Customer.ArrivalTime == customer.ArrivalTime))
@@ -273,18 +372,13 @@ namespace WPF.App.Entities
             return tryCounter;
 
         }
-        private Chair GetNextAvailableChair(Session session)
-        {
-            return session.Chairs.FirstOrDefault(c => c.IsAvailable);
-        }
-
 
         private void CheckIfSeatsExist(Session session)
         {
             var customersToRemove = new List<Customer>();
             foreach (var customer in _executionQueue)
             {
-                if (!session.Chairs.Any(chair => chair.Identifier == customer.SelectedSeat))
+                if (!session.Seats.Any(Seat => Seat.Identifier == customer.SelectedSeat))
                     customersToRemove.Add(customer);
             }
 
@@ -296,5 +390,7 @@ namespace WPF.App.Entities
             _executionQueue.AddRange(customersToAdd);
             _executionQueue.OrderBy(c => c.ArrivalTime);
         }
+        #endregion
+
     }
 }

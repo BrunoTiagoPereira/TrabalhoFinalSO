@@ -13,7 +13,7 @@ namespace WPF.App
     public partial class MainWindow : Window
     {
 
-
+        //Propriedades de binding 
         #region DependencyProperties
 
         public static readonly DependencyProperty ActiveViewProperty = DependencyProperty.Register(
@@ -43,8 +43,6 @@ namespace WPF.App
             InitializeComponent();
             DataContext = this;
             Snackbar.MessageQueue = new SnackbarMessageQueue(TimeSpan.FromSeconds(3));
-
-            
 
         }
 

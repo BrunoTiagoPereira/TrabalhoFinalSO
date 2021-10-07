@@ -19,28 +19,30 @@ namespace WPF.App
     /// </summary>
     public partial class App : Application
     {
-        private ServiceProvider serviceProvider;
+        //Configuração de injeção de dependência
+        private ServiceProvider _serviceProvider;
         public App()
         {
             ServiceCollection services = new ServiceCollection();
             ConfigureServices(services);
-            serviceProvider = services.BuildServiceProvider();
+            _serviceProvider = services.BuildServiceProvider();
         }
 
         private void ConfigureServices(ServiceCollection services)
         {
             services.AddSingleton<MainWindow>();
+          
             services.AddTransient<Menu>();
-            services.AddTransient<SessionPreview>();
             services.AddTransient<INavigationService<IBaseView>,NavigationService>();
             services.AddTransient<INotifyService,NotifyService>();
             services.AddSingleton<IReport, Report>();
+
         }
 
         private void OnStartup(object sender, StartupEventArgs e)
         {
-            var mainWindow = serviceProvider.GetService<MainWindow>();
-            mainWindow.ActiveView = serviceProvider.GetService<Menu>();
+            var mainWindow = _serviceProvider.GetService<MainWindow>();
+            mainWindow.ActiveView = _serviceProvider.GetService<Menu>();
             mainWindow.Show();
         }
     }

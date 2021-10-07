@@ -10,13 +10,14 @@ namespace WPF.App.Interfaces
     //Interface para o relatório
     public interface IReport
     {
-        //Lista de sessões
-        public List<Session> Sessions { get; set; }
+
+        //Logs de execução
+        public List<StepLog> Logs { get; set; }
 
         //Tarefa para gerar o arquivo do relatório
         public Task Generate();
 
         //Tarefa para construir o relatório
-        public Task Build();
+        public void Build(List<Session> sessions);
     }
 }

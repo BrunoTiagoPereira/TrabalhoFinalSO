@@ -60,21 +60,6 @@ namespace WPF.App.Helpers
             return streamReader;
         }
 
-        //Cria a stream do arquivo e retorna o leitor da stream do arquivo
-        public static StreamWriter CreateStreamWriterFromFile(string path)
-        {
-            //Verifica se arquivo existe no caminho informado e , se não, retorna exceção
-            if (!File.Exists(path))
-                throw new FileNotFoundException($"Arquivo '{path}' não encontrado.");
-
-            //Cria uma stream do arquivo informado
-            var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-
-            //Escritor da stream do arquivo
-            var streamWriter = new StreamWriter(fileStream);
-
-            return streamWriter;
-        }
 
 
     }

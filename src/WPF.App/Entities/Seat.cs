@@ -5,11 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media;
-
 namespace WPF.App.Entities
 {
     //Cadeira
-    public class Chair : INotifyPropertyChanged
+    public class Seat : INotifyPropertyChanged
     {
         //Cor da cadeira
         public SolidColorBrush Color

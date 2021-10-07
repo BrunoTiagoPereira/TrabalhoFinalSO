@@ -14,7 +14,7 @@ namespace WPF.App.Entities
         public Guid Id { get; set; }
 
         //Coleção de objetos cadeira observaveis 
-        public ObservableCollection<Chair> Chairs { get; set; }
+        public ObservableCollection<Seat> Seats { get; set; }
 
         //Lista de clientes
         public List<Customer> Customers { get; set; }
@@ -24,7 +24,7 @@ namespace WPF.App.Entities
 
         public bool HasCustomers
         {
-            get => Customers?.Count > 0;
+            get => Seats.Any(c=>!c.IsAvailable);
         }
     }
 }

@@ -26,7 +26,7 @@
             <RowDefinition></RowDefinition>
             <RowDefinition></RowDefinition>
         </Grid.RowDefinitions>
-        <ItemsControl Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="7" Grid.RowSpan="7" HorizontalAlignment="Left" VerticalAlignment="Top"  ItemsSource="{Binding Chairs}">
+        <ItemsControl Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="7" Grid.RowSpan="7" HorizontalAlignment="Left" VerticalAlignment="Top"  ItemsSource="{Binding Seats}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <Canvas x:Name="Canva"  />
@@ -35,9 +35,9 @@
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
                     <Grid  Width="{Binding Width}" Height="{Binding Height}" >
-                        <!--<Ellipse Stroke="White"  Fill="{Binding Color}"/>-->
                         <Rectangle Stroke="White"  Fill="{Binding Color}"/>
-                        <TextBlock HorizontalAlignment="Center" Text="{Binding Identifier}" Foreground="White" TextAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock HorizontalAlignment="Center" Text="{Binding Customer.ArrivalTime, StringFormat='C{0}'}" FontWeight="Bold" Foreground="Black" TextAlignment="Center" VerticalAlignment="top"/>
+                        <TextBlock HorizontalAlignment="Center" Text="{Binding Identifier}" Foreground="White" TextAlignment="Center" VerticalAlignment="Bottom"/>
 
                     </Grid>
 

@@ -52,6 +52,9 @@ namespace WPF.App.Services
                 case AlertType.Success:
                     color = new SolidColorBrush(Color.FromRgb(0, 163, 33));
                     break;
+                case AlertType.Warning:
+                    color = new SolidColorBrush(Color.FromRgb(252, 186, 3));
+                    break;
             }
 
             //Retorna variavel auxiliar com a cor

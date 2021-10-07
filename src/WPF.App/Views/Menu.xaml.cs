@@ -24,9 +24,8 @@ namespace WPF.App.Views
     /// <summary>
     /// Interaction logic for Menu.xaml
     /// </summary>
-    public partial class Menu : UserControl, IBaseView
+    public partial class Menu : IBaseView
     {
-        private readonly INavigationService<IBaseView> _navigationService;
         private readonly INotifyService _notifiyService;
         private readonly IReport _report;
         public object Parameter { get; set; }
@@ -72,37 +71,39 @@ namespace WPF.App.Views
             get { return (bool) GetValue(IsContentLoadedProperty); }
             set { SetValue(IsContentLoadedProperty, value); }
         }
+
+        public static readonly DependencyProperty EnableImportProperty = DependencyProperty.Register(
+            "EnableImport", typeof(bool), typeof(Menu), new PropertyMetadata(true));
+
+        public bool EnableImport
+        {
+            get { return (bool) GetValue(EnableImportProperty); }
+            set { SetValue(EnableImportProperty, value); }
+        }
         #endregion
 
-        public Menu(INavigationService<IBaseView> navigationService, INotifyService notifyService, IReport report)
+        public Menu(INotifyService notifyService, IReport report)
         {
-          
             InitializeComponent();
 
             Sessions = new List<Session>();
             Customers = new List<Customer>();
 
-            _navigationService = navigationService;
             _notifiyService = notifyService;
             _report = report;
 
             DataContext = this;
 
-
-        
-
         }
 
+        #region FileHandle
 
 
-
-        //Função do botão de Salas/Sessões para importar arquivo de dados
+        /// <summary>
+        /// Importa o arquivo de configuração
+        /// </summary>
         private async void OpenRoomConfigFile(object sender, RoutedEventArgs e)
         {
-
-            //Variável contadora de linhas do arquivo de Salas/Sessões
-            RoomConfigLineCount = 0;
-
             //Pegando o caminho do arquivo
             string filePath = Util.GetFileFromExplorer();
             string line;
@@ -126,14 +127,14 @@ namespace WPF.App.Views
 
             //Chamar método de importação as configurações de Sala/Sessões
             await ImportRoomConfig(roomConfiguration);
+
         }
 
-        //Função do botão de Clientes para importar arquivo de dados
+        /// <summary>
+        /// Importa o arquivo de clientes
+        /// </summary>
         private async void OpenCustomersFile(object sender, RoutedEventArgs e)
         {
-            //Variável contadora de linhas do arquivo de Clientes
-            CustomersLineCount = 0;
-
             //Pegando o caminho do arquivo
             string filePath = Util.GetFileFromExplorer();
             string line;
@@ -157,14 +158,16 @@ namespace WPF.App.Views
 
             //Chamar método de importação de Clientes
             await ImportCustomers(customers);
+
         }
 
+        #endregion
 
         #region Helpers
-
-        
-
-        //Método para importar as configurações de Sala/Sessões
+        /// <summary>
+        /// Método para importar as configurações de Sala/Sessões
+        /// </summary>
+        /// <param name="roomConfiguration">Dados da configuração das salas</param>
         private async Task ImportRoomConfig(List<string> roomConfiguration)
         {
             //Valida se as linhas estão no formato incorreto e , se sim, retorna mensagem para usuário
@@ -210,11 +213,14 @@ namespace WPF.App.Views
             _notifiyService.Alert(new Notification { Type = AlertType.Success, Text = $"Configuração importada!" });
 
             //Verificando a importação
-            await CheckImport();
+            CheckImport();
 
         }
 
-        //Método para importar os Clientes
+        /// <summary>
+        /// Método para importar os Clientes
+        /// </summary>
+        /// <param name="customers">Dados dos clientes</param>
         private async Task ImportCustomers(List<string> customers)
         {
             //Variável para armazenar os erros 
@@ -267,52 +273,60 @@ namespace WPF.App.Views
             //Alerta que os clientes foram importados
             _notifiyService.Alert(new Notification { Type = AlertType.Success, Text = $"Clientes importados!" });
             
-            //Atualiza o contador de linhas de Clientes
+            //Atualiza o contador de linhas de Clientes, importando apenas os validados corretamente
             CustomersLineCount = Customers.Count;
 
             //Verificando a importação 
-            await CheckImport();
+            CheckImport();
         }
 
-        //Verificar a importação
-        private async Task CheckImport()
+        /// <summary>
+        /// Verificar a importação e se estiver tudo certo, executa o algoritmo do relatório
+        /// </summary>
+        private void CheckImport()
         {
-            
-            //Se ainda possuir sessões ou clientes , definir arquivo como não carregado ainda
+            //Se ainda possuir sessões ou clientes, definir arquivo como não carregado ainda
             if (Customers.Count == 0 || Sessions.Count == 0)
-            {
-                IsContentLoaded = false;
                 return;
-            }
-            
-            await MergeCustomerSessions();
 
-            _report.Sessions = this.Sessions;
+            EnableImport = false;
 
-            await _report.Build();
+            //Inclui os clientes na sessão
+            MergeCustomerSessions();
+
+            //Executa o algoritmo do relatório
+            _report.Build(Sessions);
 
             IsContentLoaded = true;
+            
         }
 
-        public async Task MergeCustomerSessions()
+        /// <summary>
+        /// Inclui os clientes na sessão
+        /// </summary>
+        public void MergeCustomerSessions()
         {
-            await Task.Run(() =>
+            foreach (var session in Sessions)
             {
-                foreach (var session in Sessions)
-                {
-                    var sessionCustomers = Customers.Where(c => c.SelectedSession == session.StartTime).ToList();
 
-                    session.Customers = sessionCustomers;
+                var sessionCustomers = Customers.Where(c => c.SelectedSession == session.StartTime).ToList();
 
-                    session.Chairs = CreateChairs(ColumnDimension, RowDimension);
-                }
-            });
+                session.Customers = sessionCustomers;
+
+                session.Seats = CreateSeats(ColumnDimension, RowDimension);
+            }
 
         }
 
-        private ObservableCollection<Chair> CreateChairs(int columns, int rows)
+        /// <summary>
+        /// Cria as cadeiras para as salas
+        /// </summary>
+        /// <param name="columns">quantidade de colunas</param>
+        /// <param name="rows">quantidade de linhas</param>
+        /// <returns>Lista de cadeiras</returns>
+        private ObservableCollection<Seat> CreateSeats(int columns, int rows)
         {
-            var chairs = new ObservableCollection<Chair>();
+            var seats = new ObservableCollection<Seat>();
             double width = 800;
             double height = 450;
 
@@ -326,7 +340,7 @@ namespace WPF.App.Views
                 for (int j = 0; j < columns; j++)
                 {
                     prefix = ((j + 1) > 9) ? "" : "0";
-                    chairs.Add(new Chair
+                    seats.Add(new Seat
                     {
                         Identifier = $"{Util.NumberToString(i + 1)}{prefix}{j + 1}",
                         Width = ellipseWidth,
@@ -341,24 +355,31 @@ namespace WPF.App.Views
 
             }
 
-            return chairs;
+            return seats;
+
+        }
+
+        /// <summary>
+        /// Mostra o resultado do algoritmo na sessão
+        /// </summary>
+        private void NavigateToSession(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                var sessionId = (Guid)((Button)sender).Tag;
+
+                var session = Sessions.First(s => s.Id == sessionId);
+
+                var preview = new MovieTemplate(session.Seats);
+                preview.Show();
+            });
 
         }
         #endregion
 
-        private async void NavigateToSession(object sender, RoutedEventArgs e)
-        {
-            var sessionId = (Guid)((Button)sender).Tag;
-            var session = Sessions.Find(s => s.Id == sessionId);
-
-            var preview = new MovieTemplate(RowDimension, ColumnDimension, session,  _notifiyService);
-            preview.Show();
-
-            await preview.Execute();
-
-
-        }
-
+        /// <summary>
+        /// Gera o relatório
+        /// </summary>
         private async void GenerateReport(object sender, RoutedEventArgs e)
         {
             await _report.Generate();
