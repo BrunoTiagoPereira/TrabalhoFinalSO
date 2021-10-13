@@ -266,6 +266,7 @@ namespace WPF.App.Views
             if (!string.IsNullOrWhiteSpace(erro.ToString()))
             {
                 _notifiyService.Alert(new Notification { Type = AlertType.Error, Text = $"Erros nos clientes: {erro.ToString()}" });
+                CustomersLineCount = 0;
                 
                 return;
             }
