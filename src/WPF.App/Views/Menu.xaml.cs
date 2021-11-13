@@ -254,7 +254,8 @@ namespace WPF.App.Views
                     OnUnavailableSeat = Customer.GetOnUnavailableSeatBehaviorFromIdentifier(customerInfo[3]),
                     ArrivalTime = i + 1,
                     CustomerType = Customer.GetCustomerTypeFromIdentifier(customerInfo[4]),
-                    EstimatedTime = int.Parse(customerInfo[5])
+                    EstimatedTime = int.Parse(customerInfo[5]),
+                    TimeWaitForNext = int.Parse(customerInfo[6])
 
                 };
 

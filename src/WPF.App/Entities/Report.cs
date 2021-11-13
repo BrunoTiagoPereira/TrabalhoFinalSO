@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using WPF.App.Helpers;
 using WPF.App.Interfaces;
@@ -20,8 +21,17 @@ namespace WPF.App.Entities
         //Fila de execução de Clientes
         private List<Customer> _executionQueue;
 
-        //Horário atual
-        private int _currentTime;
+        //Lista da Threads
+        private List<Task> _sessionsThreads;
+
+        //Lista dos tempos das Threads
+        private List<int> _currentThreadsTime;
+
+        private DateTime _start;
+
+        //Horário atual global de todos os postos
+        private int _currentGlobalTime;
+       
 
         //Lista de registros
         public List<StepLog> Logs { get; set; }
@@ -35,6 +45,8 @@ namespace WPF.App.Entities
         //Porcentagem garantidade para clientes meia
         private const decimal HalfPricePercentage = 0.4M;
 
+
+
         //Construtor
         public Report(INotifyService notifyService)
         {
@@ -42,10 +54,16 @@ namespace WPF.App.Entities
             _notifyService = notifyService;
 
             //Inicializando variáveis
+            _start = DateTime.Now;
+            _currentGlobalTime = 1;
             _executionQueue = new List<Customer>();
-            _currentTime = 1;
+            _sessionsThreads = new List<Task>();
+            _currentThreadsTime = new List<int>();
+            
             Logs = new List<StepLog>();
             ReportLines = new List<string>();
+            
+        
 
         }
 
@@ -59,13 +77,33 @@ namespace WPF.App.Entities
 
             //Ordena as sessões por ordem de chegada e executa o algoritmo para clientes premium, meia entrada e normais
             _sessions = sessions.OrderBy(s => s.StartTime).ToList();
-            foreach (var session in sessions)
-            {
-                PremiumCustomers(session);
-                HalfPriceCustomers(session);
-                RegularCustomers(session);
 
+            //Para cada sessão cria uma thread para a execução em paralelo
+            for (int i = 0; i < sessions.Count; i++)
+            {
+                //Como a execução é assíncrona é necessário garantir que o índice vai ser o correto
+                int index = i;
+                _sessionsThreads.Add(new Task(() => Execute(sessions[index])));
+                _currentThreadsTime.Add(1);
+                _sessionsThreads[index].Start();
             }
+
+            Task.WaitAll(_sessionsThreads.ToArray());
+
+
+            WriteThreadsResult();
+
+        }
+
+        /// <summary>
+        /// Executa a session informada como parâmetro
+        /// </summary>
+        /// <param name="session">objeto da sessão completo</param>
+        private void Execute(Session session)
+        {
+            PremiumCustomers(session);
+            HalfPriceCustomers(session);
+            RegularCustomers(session);
         }
         /// <summary>
         /// Gerar arquivo de relatório
@@ -96,13 +134,7 @@ namespace WPF.App.Entities
                     Type = AlertType.Error
                 });
             }
-           
-
-           
-
-           
-
-
+            
         }
 
 
@@ -184,8 +216,8 @@ namespace WPF.App.Entities
             bool moreThanMaximumHalfPrice;
 
 
-            //Enquanto tiver elementos na fila de execução continua
-            while (_executionQueue.Count > 0)
+            //Verifica se tem clientes executando que são da sessão
+            while (HasCustomersExecutingInThisSession(session.StartTime))
             {
                 //Porcentagem de assentos confirmados na sessão
                 moreThanMaximumHalfPrice = (decimal)_sessions[sessionIndex].Seats.Count(c => !c.IsAvailable) / seatsCount > HalfPricePercentage;
@@ -194,8 +226,12 @@ namespace WPF.App.Entities
                 if (validateHalfPricePercentage && moreThanMaximumHalfPrice)
                     return;
 
-                //Executa os passos do cliente na psição 1
-                CheckSteps(_executionQueue[0], session);
+                
+                //Busca o próximo cliente da sessão pra execução 
+                Customer nextCustomer = GetNextCustomer(session.StartTime);
+               
+                //Executa os passos do cliente na posição 1
+                CheckSteps(nextCustomer, session);
             }
 
 
@@ -211,7 +247,9 @@ namespace WPF.App.Entities
         {
 
             //Remove o cliente da fila de execução
+            Monitor.Enter(_executionQueue);
             _executionQueue.Remove(customer);
+            Monitor.Exit(_executionQueue);
 
             char[] steps;
             bool seatIsUnavailableAndCustomerGaveUp = false;
@@ -251,17 +289,29 @@ namespace WPF.App.Entities
             {
                 Customer = customer,
                 Session = session,
-                Start = _currentTime,
-                Finish = _currentTime + customer.EstimatedTime,
-                TryCounter = GetTryCounterFromCustomer(customer)
+                Start = _currentGlobalTime,
+                Finish = _currentGlobalTime + customer.EstimatedTime,
+                TryCounter = GetTryCounterFromCustomer(customer),
+                ThreadId = GetThreadId(session)
 
             });
 
             //Adiciona no tempo de execução o tempo do cliente
-            _currentTime += customer.EstimatedTime;
+            _currentGlobalTime += customer.EstimatedTime;
+            AddThreadTime(GetThreadId(session),customer.EstimatedTime);
 
 
 
+        }
+
+        /// <summary>
+        /// Adiciona o tempo gasto na thread informada
+        /// </summary>
+        /// <param name="threadId">Índice da thread no array</param>
+        /// <param name="customerTimeSpent">tempo gasto pelo cliente</param>
+        private void AddThreadTime(int threadId, int customerTimeSpent)
+        {
+            _currentThreadsTime[threadId] += customerTimeSpent;
         }
 
         /// <summary>
@@ -282,7 +332,7 @@ namespace WPF.App.Entities
             seat.Color = Util.Red;
 
             _sessions[sessionIndex].Seats[seatIndex] = seat;
-            ReportLines.Add($"Cliente {customer.ArrivalTime} {customer.SelectedSeat} {session.StartTime:HH:mm} confirmou.");
+            ReportLines.Add($"Cliente {customer.ArrivalTime} Posto {GetThreadId(session)} {customer.SelectedSeat} {session.StartTime:HH:mm} confirmou.");
         }
         /// <summary>
         /// Cancela a execução do cliente
@@ -292,7 +342,7 @@ namespace WPF.App.Entities
         private void CancelCustomer(Customer customer, Session session)
         {
             //Adiciona a linha no relatório
-            ReportLines.Add($"Cliente {customer.ArrivalTime} {customer.SelectedSeat} {session.StartTime:HH:mm} não confirmou.");
+            ReportLines.Add($"Cliente {customer.ArrivalTime} Posto {GetThreadId(session)} {customer.SelectedSeat} {session.StartTime:HH:mm} não confirmou.");
 
         }
         /// <summary>
@@ -332,7 +382,7 @@ namespace WPF.App.Entities
                 
             }
             //Adiciona no relatório que o cliente desistiu
-            ReportLines.Add($"Cliente {customer.ArrivalTime} {customer.SelectedSeat} {session.StartTime:HH:mm} desistiu.");
+            ReportLines.Add($"Cliente {customer.ArrivalTime} Posto {GetThreadId(session)} {customer.SelectedSeat} {session.StartTime:HH:mm} desistiu.");
 
             return false;
         }
@@ -375,6 +425,7 @@ namespace WPF.App.Entities
 
         private void CheckIfSeatsExist(Session session)
         {
+            Monitor.Enter(_executionQueue);
             var customersToRemove = new List<Customer>();
             foreach (var customer in _executionQueue)
             {
@@ -383,12 +434,47 @@ namespace WPF.App.Entities
             }
 
             _executionQueue.RemoveAll(c => customersToRemove.Contains(c));
+            Monitor.Exit(_executionQueue);
         }
 
         private void FillExecutionQueue(IEnumerable<Customer> customersToAdd)
         {
+            Monitor.Enter(_executionQueue);
             _executionQueue.AddRange(customersToAdd);
             _executionQueue.OrderBy(c => c.ArrivalTime);
+            Monitor.Exit(_executionQueue);
+        }
+
+        private Customer GetNextCustomer(DateTime sessionStartTime)
+        {
+            Monitor.Enter(_executionQueue);
+            var nextCustomer = _executionQueue.First(c => c.SelectedSession == sessionStartTime);
+            Monitor.Exit(_executionQueue);
+            return nextCustomer;
+        }
+
+        private bool HasCustomersExecutingInThisSession(DateTime sessionStartTime)
+        {
+            Monitor.Enter(_executionQueue);
+            bool hasCustomersExecutingInThisSession = _executionQueue.Any(c => c.SelectedSession == sessionStartTime);
+            Monitor.Exit(_executionQueue);
+            return hasCustomersExecutingInThisSession;
+        }
+
+        private int GetThreadId(Session session)
+        {
+            return _sessions.IndexOf(session);
+        }
+
+        private void WriteThreadsResult()
+        {
+            ReportLines.Add($"Horário de início: {_start:HH:mm:ss tt}");
+            ReportLines.Add($"Horário de finalização:");
+
+            for (int i = 0; i < _sessionsThreads.Count; i++)
+            {
+                ReportLines.Add($"Posto {i}: {_start.AddMinutes(_currentThreadsTime[i]):HH:mm:ss tt} - Minutos gastos: {_currentThreadsTime[i]}");
+            }
         }
         #endregion
 

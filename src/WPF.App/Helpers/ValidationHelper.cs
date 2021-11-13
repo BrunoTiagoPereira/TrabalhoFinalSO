@@ -10,7 +10,7 @@ namespace WPF.App.Helpers
     public static class ValidationHelper
     {
         //Regexes para validações
-        private static Regex _customerValidation => new Regex(@"[A-z]\d{1,2};[0-2]\d{1}:[0-5]\d{1};(C|X)(S|X)(P|X);(T|D);(R|M|C);\d{1}");
+        private static Regex _customerValidation => new Regex(@"[A-z]\d{1,2};[0-2]\d{1}:[0-5]\d{1};(C|X)(S|X)(P|X);(T|D);(R|M|C);\d{1,};\d{1,}");
         private static Regex _roomConfigurationSize => new Regex(@"^[1-9]\d{0,}x[1-9]\d{0,}\s{0,}$");
         //Not perfect but ok
         private static Regex _roomConfigurationSessions => new Regex(@"([0-2]\d{1}:[0-5]\d{1},?)+");

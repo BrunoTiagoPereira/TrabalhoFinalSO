@@ -30,6 +30,9 @@ namespace WPF.App.Entities
         //Tempo estimado
         public int EstimatedTime { get; set; } //7
 
+        //Tempo para o próximo cliente
+        public int TimeWaitForNext { get; set; }
+
 
         //Método para identificar o tipo de cliente 
         public static CustomerType GetCustomerTypeFromIdentifier(string identifier)

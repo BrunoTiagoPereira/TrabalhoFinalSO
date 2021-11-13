@@ -22,5 +22,8 @@ namespace WPF.App.Entities
 
         //Tentativas
         public int TryCounter { get; set; }
+
+        //ThreadId
+        public int ThreadId { get; set; }
     }
 }
