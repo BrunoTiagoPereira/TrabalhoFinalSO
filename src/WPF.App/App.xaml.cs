@@ -36,6 +36,7 @@ namespace WPF.App
             services.AddTransient<INavigationService<IBaseView>,NavigationService>();
             services.AddTransient<INotifyService,NotifyService>();
             services.AddSingleton<IReport, Report>();
+            services.AddSingleton<IExecution, Execution>();
 
         }
 

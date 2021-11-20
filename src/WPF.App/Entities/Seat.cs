@@ -36,7 +36,7 @@ namespace WPF.App.Entities
         public double Left { get; set; }
         
         //Disponibilidade
-        public bool IsAvailable { get; set; }
+        public Status Status { get; set; }
 
         //Cliente que está utilizando a cadeira
         public Customer Customer { get; set; }
@@ -45,4 +45,12 @@ namespace WPF.App.Entities
         public event PropertyChangedEventHandler PropertyChanged;
 
     }
+
+    public enum Status
+    {
+        Pending,
+        Unavailable,
+        Available
+    }
+
 }

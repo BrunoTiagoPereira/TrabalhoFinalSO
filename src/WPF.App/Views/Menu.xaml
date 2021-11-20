@@ -45,6 +45,8 @@
                     <ColumnDefinition></ColumnDefinition>
                     <ColumnDefinition></ColumnDefinition>
                     <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition></RowDefinition>
@@ -56,7 +58,7 @@
                     <RowDefinition></RowDefinition>
                 </Grid.RowDefinitions>
 
-                <StackPanel Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="3">
+                <StackPanel Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="5">
                     <TextBlock HorizontalAlignment="Center"  Style="{StaticResource MaterialDesignButtonTextBlock}" Text="Escalonamento Cinema"></TextBlock>
                 </StackPanel>
 
@@ -64,12 +66,22 @@
                     <Button IsEnabled="{Binding EnableImport}" Click="OpenRoomConfigFile" HorizontalAlignment="Center" Width="150">Salas/Sessões</Button>
                     <TextBlock  Text="{Binding RoomConfigLineCount, StringFormat='Lidos - {0}'}" HorizontalAlignment="Center" Margin="0 20 0 0" ></TextBlock>
                 </StackPanel>
-                <StackPanel Grid.Row="3" Grid.RowSpan="2" Grid.Column="4" Grid.ColumnSpan="2">
+                <StackPanel Grid.Row="3" Grid.RowSpan="2" Grid.Column="3" Grid.ColumnSpan="3">
+                    <ComboBox materialDesign:HintAssist.Hint="Cabines" 
+                              SelectedItem="{Binding SelectThreadsCounter}"  HorizontalAlignment="Center" Width="150">
+                        <ComboBoxItem>1</ComboBoxItem>
+                        <ComboBoxItem>2</ComboBoxItem>
+                        <ComboBoxItem>3</ComboBoxItem>
+                        <ComboBoxItem>4</ComboBoxItem>
+                        <ComboBoxItem>5</ComboBoxItem>
+                    </ComboBox>
+                </StackPanel>
+                <StackPanel Grid.Row="3" Grid.RowSpan="2" Grid.Column="6" Grid.ColumnSpan="2">
                     <Button IsEnabled="{Binding EnableImport}" Click="OpenCustomersFile" HorizontalAlignment="Center" Width="150">Clientes</Button>
                     <TextBlock Text="{Binding CustomersLineCount, StringFormat='Lidos - {0}'}" HorizontalAlignment="Center" Margin="0 20 0 0" ></TextBlock>
                 </StackPanel>
 
-                <StackPanel Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="5">
+                <StackPanel Grid.Row="5" Grid.Column="2" Grid.ColumnSpan="5">
 
                     <Button IsEnabled="{Binding IsContentLoaded}" 
                             Command="{x:Static materialDesign:DrawerHost.OpenDrawerCommand}"

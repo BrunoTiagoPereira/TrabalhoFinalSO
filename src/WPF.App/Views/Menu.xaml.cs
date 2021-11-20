@@ -28,6 +28,7 @@ namespace WPF.App.Views
     {
         private readonly INotifyService _notifiyService;
         private readonly IReport _report;
+        private readonly IExecution _execution;
         public object Parameter { get; set; }
         public Type TypeScreen { get; set; }
 
@@ -75,22 +76,36 @@ namespace WPF.App.Views
         public static readonly DependencyProperty EnableImportProperty = DependencyProperty.Register(
             "EnableImport", typeof(bool), typeof(Menu), new PropertyMetadata(true));
 
+
         public bool EnableImport
         {
             get { return (bool) GetValue(EnableImportProperty); }
             set { SetValue(EnableImportProperty, value); }
         }
+
+
+        public static readonly DependencyProperty SelectThreadsCounterProperty = DependencyProperty.Register(
+            "SelectThreadsCounter", typeof(int), typeof(Menu), new PropertyMetadata(1));
+
+        public int SelectThreadsCounter
+        {
+            get { return (int)GetValue(SelectThreadsCounterProperty); }
+            set { SetValue(SelectThreadsCounterProperty, value); }
+        }
+        
         #endregion
 
-        public Menu(INotifyService notifyService, IReport report)
+        public Menu(INotifyService notifyService, IReport report, IExecution execution)
         {
             InitializeComponent();
 
             Sessions = new List<Session>();
             Customers = new List<Customer>();
+       
 
             _notifiyService = notifyService;
             _report = report;
+            _execution = execution;
 
             DataContext = this;
 
@@ -293,11 +308,11 @@ namespace WPF.App.Views
 
             EnableImport = false;
 
-            //Inclui os clientes na sessão
+            ////Inclui os clientes na sessão
             MergeCustomerSessions();
 
             //Executa o algoritmo do relatório
-            _report.Build(Sessions);
+            _report.Build(Sessions,Customers,SelectThreadsCounter);
 
             IsContentLoaded = true;
             
@@ -311,12 +326,16 @@ namespace WPF.App.Views
             foreach (var session in Sessions)
             {
 
-                var sessionCustomers = Customers.Where(c => c.SelectedSession == session.StartTime).ToList();
+                //var sessionCustomers = Customers.Where(c => c.SelectedSession == session.StartTime).ToList();
 
-                session.Customers = sessionCustomers;
+                //session.Customers = sessionCustomers;
 
                 session.Seats = CreateSeats(ColumnDimension, RowDimension);
             }
+
+            _execution.Sessions = Sessions;
+            
+
 
         }
 
@@ -350,7 +369,7 @@ namespace WPF.App.Views
                         Color = Util.Blue,
                         Top = i * (ellipseHeight + 10),
                         Left = j * (ellipseWidth + 10),
-                        IsAvailable = true,
+                        Status = true,
                     });
 
                 }

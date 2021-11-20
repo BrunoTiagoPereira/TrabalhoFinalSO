@@ -11,13 +11,11 @@ namespace WPF.App.Interfaces
     public interface IReport
     {
 
-        //Logs de execução
-        public List<StepLog> Logs { get; set; }
 
         //Tarefa para gerar o arquivo do relatório
         public Task Generate();
 
         //Tarefa para construir o relatório
-        public void Build(List<Session> sessions);
+        public void Build(List<Session> sessions, List<Customer> customers, int threads);
     }
 }
