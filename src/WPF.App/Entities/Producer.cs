@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using WPF.App.Interfaces;
 using Timer = System.Timers.Timer;
 
+
 namespace WPF.App.Entities
 {
     public class Producer
@@ -18,6 +19,10 @@ namespace WPF.App.Entities
         private int _currentTime;
         private int _waitForNext;
         private int _lastTimeAdded;
+
+        //Porcentagem garantidade para clientes meia
+        private const decimal HalfPricePercentage = 0.4M;
+
 
         public Producer(List<Customer> customers, IExecution execution, bool useWaitingForNextCustomer)
         {
@@ -55,13 +60,14 @@ namespace WPF.App.Entities
 
                 var customersToAdd = GetCustomers();
 
-                AddCustomerToQueue(customersToAdd);
+                AddCustomersToQueue(customersToAdd);
                 EndQueueMonitor();
                 _addCustomersToQueue.Start();
             }
+
+            _currentTime++;
         }
 
-    
 
         #region Util
         private void FilterAvailableSeats()
@@ -90,11 +96,12 @@ namespace WPF.App.Entities
 
 
         }
-        private void AddCustomerToQueue(List<Customer> customerToAdd)
+        private void AddCustomersToQueue(List<Customer> customerToAdd)
         {
 
             if (customerToAdd.Count == 0)
                 return;
+
 
             foreach (var customer in customerToAdd)
             {
@@ -102,7 +109,6 @@ namespace WPF.App.Entities
                 {
                     RearrangeAndAddToQueue(customer);
                     continue;
-                    
 
                 }
 
@@ -117,12 +123,56 @@ namespace WPF.App.Entities
 
         private void RearrangeAndAddToQueue(Customer customer)
         {
-            throw new NotImplementedException();
+            List<Customer> newExecutionQueue = new List<Customer>();
+
+            var premium = _execution.ExecutionQueue.Where(c=>c.CustomerType==CustomerType.Premium).OrderByDescending(c=>c.ArrivalTime).ToList();
+
+            if(customer.CustomerType== CustomerType.Premium)
+                premium.Add(customer);
+
+
+            var halfPrice = _execution.ExecutionQueue.Where(c=>c.CustomerType==CustomerType.HalfPrice).OrderByDescending(c => c.ArrivalTime).ToList();
+
+            if (customer.CustomerType == CustomerType.HalfPrice)
+                halfPrice.Add(customer);
+
+
+            var regular = _execution.ExecutionQueue.Where(c=>c.CustomerType==CustomerType.Regular).OrderByDescending(c => c.ArrivalTime).ToList();
+
+            if (customer.CustomerType == CustomerType.Regular)
+                regular.Add(customer);
+
+
+            newExecutionQueue.AddRange(premium);
+            newExecutionQueue.AddRange(halfPrice);
+            newExecutionQueue.AddRange(regular);
+
+
+            _execution.ExecutionQueue = newExecutionQueue;
+
         }
 
         private bool ShouldRearrangeQueue(Customer customer)
         {
-            throw new NotImplementedException();
+            var customerType = customer.CustomerType;
+
+            var seatsCount = _execution.Sessions[GetCustomerSessionIndex(customer)].Seats.Count;
+
+            var moreThanMaximumHalfPrice = (decimal)_execution.Sessions[GetCustomerSessionIndex(customer)].Seats.Count(s => s.Status==Status.Unavailable ) / seatsCount > HalfPricePercentage;
+
+            var isHalfPriceAndValid = customerType == CustomerType.HalfPrice && !moreThanMaximumHalfPrice;
+
+            if (HasCustomersUnder(customerType)&&isHalfPriceAndValid)
+                return true;
+
+
+            return false;
+
+        }
+
+        private bool HasCustomersUnder(CustomerType customerType)
+        {
+            return _execution.ExecutionQueue.Any(c => (int)c.CustomerType < (int)customerType);
         }
 
         private List<Customer> GetCustomers()
@@ -150,6 +200,12 @@ namespace WPF.App.Entities
             }
 
             return nextCustomer;
+        }
+        public int GetCustomerSessionIndex(Customer customer)
+        {
+            var customerSessionIndex =
+                _execution.Sessions.FindIndex(s => s.StartTime == customer.SelectedSession);
+            return customerSessionIndex;
         }
         #endregion
 
