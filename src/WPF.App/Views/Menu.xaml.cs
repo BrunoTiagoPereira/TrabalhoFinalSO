@@ -369,7 +369,7 @@ namespace WPF.App.Views
                         Color = Util.Blue,
                         Top = i * (ellipseHeight + 10),
                         Left = j * (ellipseWidth + 10),
-                        Status = true,
+                        Status = Status.Available,
                     });
 
                 }
