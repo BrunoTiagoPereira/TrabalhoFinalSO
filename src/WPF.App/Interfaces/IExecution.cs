@@ -11,6 +11,11 @@ namespace WPF.App.Interfaces
         //Logs de execução
         public List<StepLog> Logs { get; set; }
 
+        //Lista de finalizados pelos consumidores
+        public List<Customer> ConsumersFinished { get; set; }
+
+        //Lista de finalizados pelos produtores
+        public List<Customer> ProducerFinished { get; set; }
 
         //Horário atual global de todos os postos
         public int CurrentGlobalTime { get; set; }

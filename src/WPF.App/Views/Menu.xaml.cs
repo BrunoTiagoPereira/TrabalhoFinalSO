@@ -108,7 +108,13 @@ namespace WPF.App.Views
             _execution = execution;
 
             DataContext = this;
+            _report.OnReportFinished += OnReportFinished;
 
+        }
+
+        private void OnReportFinished(object sender, EventArgs e)
+        {
+            IsContentLoaded = true;
         }
 
         #region FileHandle
@@ -314,7 +320,9 @@ namespace WPF.App.Views
             //Executa o algoritmo do relatório
             _report.Build(Sessions,Customers,SelectThreadsCounter);
 
-            IsContentLoaded = true;
+
+
+            //IsContentLoaded = true;
             
         }
 

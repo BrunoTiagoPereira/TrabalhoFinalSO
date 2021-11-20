@@ -12,6 +12,8 @@ namespace WPF.App.Entities
         public List<Customer> ExecutionQueue { get; set; }
         public List<Session> Sessions { get; set; }
         public List<StepLog> Logs { get; set; }
+        public List<Customer> ConsumersFinished { get; set; }
+        public List<Customer> ProducerFinished { get; set; }
         public int CurrentGlobalTime { get; set; }
     }
 }

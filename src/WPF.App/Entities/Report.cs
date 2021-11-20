@@ -6,9 +6,11 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 using WPF.App.Helpers;
 using WPF.App.Interfaces;
 using WPF.App.Public;
+using Timer = System.Timers.Timer;
 
 namespace WPF.App.Entities
 {
@@ -40,6 +42,7 @@ namespace WPF.App.Entities
 
         //Lista de consumidores
         private List<Consumer> _consumers;
+        private Timer _checkFinished;
 
 
         //Lista de linhas de relatório
@@ -47,6 +50,8 @@ namespace WPF.App.Entities
 
         //Porcentagem garantidade para clientes meia
         private const decimal HalfPricePercentage = 0.4M;
+
+        public event EventHandler OnReportFinished; 
 
 
 
@@ -66,11 +71,40 @@ namespace WPF.App.Entities
 
             Logs = new List<StepLog>();
             ReportLines = new List<string>();
-            
-        
+
+
+            _execution.ProducerFinished = new List<Customer>();
+            _execution.ExecutionQueue = new List<Customer>();
+            _execution.ConsumersFinished = new List<Customer>();
+
+
 
         }
 
+        #region Instances
+
+        private void InstanceCheckQueueFinished()
+        {
+            _checkFinished = new Timer();
+            _checkFinished.Enabled = true;
+            _checkFinished.Interval = 1000;
+            _checkFinished.Elapsed += CheckFinished;
+            _checkFinished.Start();
+
+
+        }
+
+        private void CheckFinished(object sender, ElapsedEventArgs e)
+        {
+            if (_execution.ProducerFinished.Count==_execution.ConsumersFinished.Count&&
+                !_producer.IsExecuting)
+            {
+                _consumers.ForEach(c=>c.Finish());
+                OnReportFinished?.Invoke(null,null);
+            }
+        }
+
+        #endregion
 
         /// <summary>
         /// Executa o algoritmo do relatório
@@ -83,22 +117,24 @@ namespace WPF.App.Entities
             CreateProducer(customers);
 
             CreateConsumers(threads);
-           
 
-            //Ordena as sessões por ordem de chegada e executa o algoritmo para clientes premium, meia entrada e normais
-            _sessions = sessions.OrderBy(s => s.StartTime).ToList();
+            InstanceCheckQueueFinished();
 
-            //Para cada sessão cria uma thread para a execução em paralelo
-            for (int i = 0; i < sessions.Count; i++)
-            {
-                //Como a execução é assíncrona é necessário garantir que o índice vai ser o correto
-                int index = i;
-                //_threadsList.Add(new Task(() => Execute(sessions[index])));
-                _currentThreadsTime.Add(1);
-                _threadsList[index].Start();
-            }
 
-            Task.WaitAll(_threadsList.ToArray());
+            ////Ordena as sessões por ordem de chegada e executa o algoritmo para clientes premium, meia entrada e normais
+            //_sessions = sessions.OrderBy(s => s.StartTime).ToList();
+
+            ////Para cada sessão cria uma thread para a execução em paralelo
+            //for (int i = 0; i < sessions.Count; i++)
+            //{
+            //    //Como a execução é assíncrona é necessário garantir que o índice vai ser o correto
+            //    int index = i;
+            //    //_threadsList.Add(new Task(() => Execute(sessions[index])));
+            //    _currentThreadsTime.Add(1);
+            //    _threadsList[index].Start();
+            //}
+
+            //Task.WaitAll(_threadsList.ToArray());
 
 
             //WriteThreadsResult();
@@ -107,15 +143,15 @@ namespace WPF.App.Entities
 
         private void CreateConsumers(int threads)
         {
-            for (int i = 0; i < threads; i++)
-            {
-                this._consumers.Add(new Consumer(_execution));
-            }
+            //for (int i = 0; i < 1; i++)
+            //{
+            //    this._consumers.Add(new Consumer(_execution));
+            //}
         }
 
         private void CreateProducer(List<Customer> customers)
         {
-            _producer = new Producer(customers, _execution, true);
+            _producer = new Producer(customers, _execution, false);
         }
 
         //private void GetNextConsumerAvailable()

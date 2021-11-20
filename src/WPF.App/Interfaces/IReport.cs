@@ -17,5 +17,7 @@ namespace WPF.App.Interfaces
 
         //Tarefa para construir o relatório
         public void Build(List<Session> sessions, List<Customer> customers, int threads);
+
+        public event EventHandler OnReportFinished;
     }
 }

@@ -55,6 +55,7 @@ namespace WPF.App.Entities
         #region Instances
         private void InstanceTimerForCheckingQueue()
         {
+            _checkQueue = new Timer();
             _checkQueue.Enabled = true;
             _checkQueue.Interval = TimerInterval;
             _checkQueue.Elapsed += CheckQueue;
@@ -64,6 +65,7 @@ namespace WPF.App.Entities
 
         private void InstanceTimerForWaitingForPending()
         {
+            _waitForPending = new Timer();
             _waitForPending.Enabled = true;
             _waitForPending.Interval = TimerInterval;
             _waitForPending.Elapsed += WaitForPending;
@@ -215,6 +217,8 @@ namespace WPF.App.Entities
             _execution.CurrentGlobalTime += _currentCustomer.EstimatedTime;
             _consumerTime += _currentCustomer.EstimatedTime;
 
+            _execution.ConsumersFinished.Add(_currentCustomer);
+
 
 
         }
@@ -339,13 +343,13 @@ namespace WPF.App.Entities
 
             return nextCustomer;
         }
-        public int GetCustomerSessionIndex()
+        private int GetCustomerSessionIndex()
         {
             var customerSessionIndex =
                 _execution.Sessions.FindIndex(s => s.StartTime == _currentCustomer.SelectedSession);
             return customerSessionIndex;
         }
-        public int GetCustomerSeatIndex()
+        private int GetCustomerSeatIndex()
         {
             var customerSessionIndex = GetCustomerSessionIndex();
 
@@ -355,16 +359,20 @@ namespace WPF.App.Entities
             return customerSeatIndex;
         }
 
-       
+        public void Finish()
+        {
+            _checkQueue.Stop();
 
-        public void StartSeatMonitor() => Monitor.Enter(_execution.Sessions[_customerSessionIndex].Seats[_customerSeatIndex]);
-        public void EndSeatMonitor() => Monitor.Exit(_execution.Sessions[_customerSessionIndex].Seats[_customerSeatIndex]);
+        }
 
-        public void StartQueueMonitor() => Monitor.Enter(_execution.ExecutionQueue);
-        public void EndQueueMonitor() => Monitor.Exit(_execution.ExecutionQueue);
+        private void StartSeatMonitor() => Monitor.Enter(_execution.Sessions[_customerSessionIndex].Seats[_customerSeatIndex]);
+        private void EndSeatMonitor() => Monitor.Exit(_execution.Sessions[_customerSessionIndex].Seats[_customerSeatIndex]);
 
-        public void StartSessionMonitor() => Monitor.Enter(_execution.Sessions[_customerSessionIndex]);
-        public void EndSessionMonitor() => Monitor.Exit(_execution.Sessions[_customerSessionIndex]);
+        private void StartQueueMonitor() => Monitor.Enter(_execution.ExecutionQueue);
+        private void EndQueueMonitor() => Monitor.Exit(_execution.ExecutionQueue);
+
+        private void StartSessionMonitor() => Monitor.Enter(_execution.Sessions[_customerSessionIndex]);
+        private void EndSessionMonitor() => Monitor.Exit(_execution.Sessions[_customerSessionIndex]);
         #endregion
 
 
