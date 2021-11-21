@@ -159,7 +159,9 @@ namespace WPF.App.Views
             CurrentTime = _execution.CurrentGlobalTime;
         }
         #region Instance
-
+        /// <summary>
+        /// Cria a lista de threads disponíveis para a escolha
+        /// </summary>
         public void InstanceThreadsList()
         {
             ThreadsListItems = new ObservableCollection<ThreadListItem>();
@@ -169,15 +171,19 @@ namespace WPF.App.Views
             }
         }
         #endregion
+        #region Events
+
         private void OnReportFinished(object sender, EventArgs e)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
                 IsContentLoaded = true;
-                _notifiyService.Alert(new Notification{Type = AlertType.Success, Text = "Algoritmo executado com sucesso!"});
+                _notifiyService.Alert(new Notification { Type = AlertType.Success, Text = "Algoritmo executado com sucesso!" });
             });
 
         }
+        #endregion
+
 
         #region FileHandle
 

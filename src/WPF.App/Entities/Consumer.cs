@@ -11,41 +11,63 @@ using Timer = System.Timers.Timer;
 
 namespace WPF.App.Entities
 {
+
+    /// <summary>
+    /// Consumidor
+    /// </summary>
     public class Consumer
     {
+
+        #region Props
+        //Singleton de execução
         private readonly IExecution _execution;
 
-        private const int TimerInterval = 1000;
-        public Task CurrentThread { get; set; }
-        public bool IsExecuting { get; private set; }
-
+        //Id do posto
         public int Id { get; set; }
 
+        //Intervalo padrão
+        private const int TimerInterval = 1000;
+
+        //Thread atual que está sendo executado
+        public Task CurrentThread { get; set; }
+
+        //Bool se está executando
+        public bool IsExecuting { get; private set; }
+
+
+        //Timer pra verificar a fila
         private Timer _checkQueue;
 
+        //Timer para verificar cadeira pendente
         private Timer _waitForPending;
 
-
+        //Esperar o tempo do cliente ou não (interface)
         private bool _shouldWaitCustomerTime;
-    
-       
+
+
+        //Propriedades atuais do consumidor para fácil acesso
         private Customer _currentCustomer;
         private int _customerSessionIndex;
         private int _customerSeatIndex;
         private Session _customerSession;
         private Seat _selectedSeat;
+        #endregion
 
         #region Events
 
-        public static event EventHandler<StepLog> AddStepLog; 
-        public static event EventHandler<string> AddReportLog; 
+        //Evento de novo steplog
+        public static event EventHandler<StepLog> AddStepLog;
+        //Evento de adicionar na linha do relatório
+        public static event EventHandler<string> AddReportLog;
+        //Quando aumenta o tempo total da aplicação
         public static event EventHandler OnCurrentGlobalTimeChanged; 
         #endregion
         public Consumer(IExecution execution, int id, bool shouldWaitCustomerTime)
         {
             Id = id;
             _shouldWaitCustomerTime = shouldWaitCustomerTime;
-            this._execution = execution;
+            _execution = execution;
+
             InstanceTimerForCheckingQueue();
             InstanceTimerForWaitingForPending();
 
@@ -75,13 +97,19 @@ namespace WPF.App.Entities
         }
         #endregion
 
-
+        #region TimersCheck
+        /// <summary>
+        /// Verifica se o assento saiu do status de pendente
+        /// </summary>
         private void WaitForPending(object sender, System.Timers.ElapsedEventArgs e)
         {
             CanConsumeSeat();
-            
+
         }
 
+        /// <summary>
+        /// Verifica se há elementos na fila pra execução e caso o consumidor não esteja executando, cria uma thread e executa com o próximo elemento 
+        /// </summary>
         private void CheckQueue(object sender, System.Timers.ElapsedEventArgs e)
         {
             if (!IsExecuting)
@@ -92,7 +120,12 @@ namespace WPF.App.Entities
 
 
         }
+        #endregion
 
+        #region NormalState
+        /// <summary>
+        /// Verifica se há elementos na fila, busca o próximo cliente e executa
+        /// </summary>
         public void CanConsume()
         {
             StartQueueMonitor();
@@ -106,23 +139,29 @@ namespace WPF.App.Entities
 
                 _checkQueue.Start();
             }
-               
+
 
             EndQueueMonitor();
 
-          
+
 
         }
+
+        /// <summary>
+        /// Adiciona +1 no tempo de execução do posto, cria as informações do cliente atual e executa
+        /// </summary>
         public void Consume()
         {
-            _execution.CurrentConsumersTime[Id - 1]++;
             BuildCustomerInfo();
             IsExecuting = true;
             ExecuteCustomer();
             IsExecuting = false;
-           
+
         }
 
+        /// <summary>
+        /// Verifica o estado da cadeira, caso esteja pendente entra em estado de pendente, caso não executa
+        /// </summary>
         private void ExecuteCustomer()
         {
             StartSeatMonitor();
@@ -136,18 +175,24 @@ namespace WPF.App.Entities
             CheckSteps();
 
         }
+        #endregion
 
+        #region PendingState
+        /// <summary>
+        /// Entra em estado para verificar quando o assento sairá do estado de pendente e para o timer de checar a fila
+        /// </summary>
         private void EnterPending()
         {
             _checkQueue.Stop();
-            
+
             _waitForPending.Start();
-            
+
             EndSeatMonitor();
         }
 
-        
-
+        /// <summary>
+        /// Verifica se a cadeira está em estado de pendente e caso não esteja mais executa
+        /// </summary>
         public void CanConsumeSeat()
         {
             StartSeatMonitor();
@@ -162,7 +207,7 @@ namespace WPF.App.Entities
             //Continua com o monitor fechado para não mudar o estado do assento
             Consume();
         }
-
+        #endregion
 
         #region Execution
         /// <summary>
@@ -222,25 +267,25 @@ namespace WPF.App.Entities
 
             });
 
-
+            //caso a configuração de esperar o tempo do cliente esteja marcada esperado esse tempo (interface)
             if (_shouldWaitCustomerTime)
             {
                 Thread.Sleep(_currentCustomer.EstimatedTime*1000);
             }
+            //Adiciona no tempo do posto o tempo do cliente
 
             _execution.CurrentConsumersTime[Id - 1]+=_currentCustomer.EstimatedTime;
 
             //Adiciona no tempo de execução o tempo do cliente
             _execution.CurrentGlobalTime += _currentCustomer.EstimatedTime;
+
+            //Chama a thread principal pra atualizar a interface (necessidade WPF)
             Application.Current.Dispatcher.Invoke(() =>
             {
                 OnCurrentGlobalTimeChanged?.Invoke(this, EventArgs.Empty);
             });
-           
-
             
-           
-
+            //Adiciona o cliente na lista clientes finalizados
             _execution.ConsumersFinished.Add(_currentCustomer);
 
 
@@ -252,7 +297,7 @@ namespace WPF.App.Entities
         /// </summary>
         private void Pay()
         {
-            //Muda o status na sessão e adiciona no relatório a informação
+            //Muda o status na sessão e adiciona no relatório a informação na thread principal (necessidade WPF)
             Application.Current.Dispatcher.Invoke(() =>
             {
                 _selectedSeat.Status = Status.Unavailable;
@@ -287,7 +332,7 @@ namespace WPF.App.Entities
         /// </summary>
         private bool CheckIfSeatIsAvailable()
         {
-            //Verifica se o assento está disponível
+            //Verifica se o assento está disponível, caso esteja transforma o estado dele em pendente
 
             if (_selectedSeat.Status == Status.Available)
             {
@@ -309,6 +354,9 @@ namespace WPF.App.Entities
             return false;
         }
 
+        /// <summary>
+        /// Tenta outro assento
+        /// </summary>
         private bool TryAnotherSeat()
         {
             StartSessionMonitor();
@@ -333,6 +381,11 @@ namespace WPF.App.Entities
         /// <returns></returns>
         private Seat GetNextAvailableSeat() => _customerSession.Seats.FirstOrDefault(s => s.Status == Status.Available);
 
+        /// <summary>
+        /// Retorna qual é o número da tentiva do cliente
+        /// </summary>
+        /// <param name="customer">cliente</param>
+        
         private int GetTryCounterFromCustomer(Customer customer)
         {
             var tryCounter = 0;
@@ -347,7 +400,6 @@ namespace WPF.App.Entities
 
 
         #endregion
-
 
         #region Util
 

@@ -17,10 +17,13 @@ namespace WPF.App.Entities
     //Relatório
     public class Report : IReport
     {
+        #region Props
         //Serviço de notificação
         private readonly INotifyService _notifyService;
+        //Singleton de execução
         private readonly IExecution _execution;
 
+        //Tempo que começou a executar
         private DateTime _start;
 
 
@@ -39,14 +42,15 @@ namespace WPF.App.Entities
 
         //Lista de linhas de relatório
         public List<string> ReportLines { get; set; }
+        #endregion
 
-
+        #region Events
+        //Evento acionado com o relatório terminar de executar
         public event EventHandler OnReportFinished;
 
         //Evento quando o tempo da aplicação for alterado
         public event EventHandler OnCurrentGlobalTimeChange;
-
-
+        #endregion
 
         //Construtor
         public Report(INotifyService notifyService, IExecution execution)
@@ -77,10 +81,10 @@ namespace WPF.App.Entities
 
 
         }
-
+        #region EventHandlers
         private void OnCurrentGlobalTimeChanged(object sender, EventArgs e)
         {
-            OnCurrentGlobalTimeChange?.Invoke(this,e);
+            OnCurrentGlobalTimeChange?.Invoke(this, e);
         }
 
         private void ConsumerAddReportLog(object sender, string e)
@@ -90,8 +94,10 @@ namespace WPF.App.Entities
 
         private void ConsumerAddStepLog(object sender, StepLog e)
         {
-           _execution.Logs.Add(e);
+            _execution.Logs.Add(e);
         }
+        #endregion
+
 
         #region Instances
 
@@ -133,14 +139,22 @@ namespace WPF.App.Entities
         /// <param name="shouldWaitCustomerTime">esperar o tempo do cliente executando</param>
         public void Build(List<Customer> customers, int threads, bool shouldWaitForNextCustomer, bool shouldWaitCustomerTime)
         {
+            //Cria o produtor
             CreateProducer(customers, shouldWaitForNextCustomer);
 
+            //Cria os consumidores
             CreateConsumers(threads, shouldWaitCustomerTime);
 
+            //Timer pra verificar quando terminou o processo
             InstanceCheckQueueFinished();
 
         }
 
+        /// <summary>
+        /// Para cada thread passada como parâmetro cria um consumidor
+        /// </summary>
+        /// <param name="threads">número de threads escolhido</param>
+        /// <param name="shouldWaitCustomerTime">esperar o tempo do cliente</param>
         private void CreateConsumers(int threads, bool shouldWaitCustomerTime)
         {
             _execution.CurrentConsumersTime = new List<int>();
@@ -151,13 +165,20 @@ namespace WPF.App.Entities
             }
         }
 
+        /// <summary>
+        /// Cria o produtor
+        /// </summary>
+        /// <param name="customers">Clientes</param>
+        /// <param name="shouldWaitForNextCustomer">esperar o tempo até o próximo cliente</param>
         private void CreateProducer(List<Customer> customers, bool shouldWaitForNextCustomer)
         {
             _producer = new Producer(customers, _execution, shouldWaitForNextCustomer);
         }
 
 
-
+        /// <summary>
+        /// Gera o relatório
+        /// </summary>
         public async Task Generate()
         {
             //Criando arquivo
@@ -187,7 +208,9 @@ namespace WPF.App.Entities
 
         }
 
-
+        /// <summary>
+        /// Escreve o resultado final do relatório
+        /// </summary>
         private void WriteThreadsResult()
         {
             int total = _execution.CurrentConsumersTime.Sum();

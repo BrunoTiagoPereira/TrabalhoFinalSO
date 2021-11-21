@@ -6,7 +6,9 @@ namespace WPF.App.Interfaces
 {
     public interface IExecution
     {
+        //Fila de execução
         public List<Customer> ExecutionQueue { get; set; }
+        //Sessões criadas pra execução
         public List<Session> Sessions { get; set; }
 
         //Logs de execução
