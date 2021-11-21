@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using WPF.App.Entities;
 
 namespace WPF.App.Interfaces
@@ -19,5 +20,8 @@ namespace WPF.App.Interfaces
 
         //Horário atual global de todos os postos
         public int CurrentGlobalTime { get; set; }
+
+        //Evento quando o cliente precisa adicionar um cliente em uma nova cadeira
+        public event EventHandler<Customer> TryAnotherSeat;
     }
 }

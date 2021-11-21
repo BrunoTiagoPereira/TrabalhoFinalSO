@@ -76,9 +76,23 @@ namespace WPF.App.Entities
             _execution.ProducerFinished = new List<Customer>();
             _execution.ExecutionQueue = new List<Customer>();
             _execution.ConsumersFinished = new List<Customer>();
+            _execution.Logs = new List<StepLog>();
+
+            Consumer.AddStepLog += ConsumerAddStepLog;
+            Consumer.AddReportLog += ConsumerAddReportLog;
 
 
 
+        }
+
+        private void ConsumerAddReportLog(object sender, string e)
+        {
+            ReportLines.Add(e);
+        }
+
+        private void ConsumerAddStepLog(object sender, StepLog e)
+        {
+           _execution.Logs.Add(e);
         }
 
         #region Instances
@@ -96,12 +110,17 @@ namespace WPF.App.Entities
 
         private void CheckFinished(object sender, ElapsedEventArgs e)
         {
-            if (_execution.ProducerFinished.Count==_execution.ConsumersFinished.Count&&
+            Monitor.Enter(_execution.Logs);
+            if (_execution.ProducerFinished.Count==_execution.Logs.Count(l => l.TryCounter==0)&&
                 !_producer.IsExecuting)
             {
                 _consumers.ForEach(c=>c.Finish());
+                _checkFinished.Stop();
+                Monitor.Exit(_execution.Logs);
                 OnReportFinished?.Invoke(null,null);
+                return;
             }
+            Monitor.Exit(_execution.Logs);
         }
 
         #endregion
@@ -143,10 +162,10 @@ namespace WPF.App.Entities
 
         private void CreateConsumers(int threads)
         {
-            //for (int i = 0; i < 1; i++)
-            //{
-            //    this._consumers.Add(new Consumer(_execution));
-            //}
+            for (int i = 0; i < 5; i++)
+            {
+                this._consumers.Add(new Consumer(_execution,i));
+            }
         }
 
         private void CreateProducer(List<Customer> customers)

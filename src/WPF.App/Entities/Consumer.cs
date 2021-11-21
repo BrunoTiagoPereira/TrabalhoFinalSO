@@ -37,11 +37,12 @@ namespace WPF.App.Entities
 
         #region Events
 
-        public event EventHandler<EventArgs> AddStepLog; 
-        public event EventHandler<EventArgs> AddReportLog; 
+        public static event EventHandler<StepLog> AddStepLog; 
+        public static event EventHandler<string> AddReportLog; 
         #endregion
-        public Consumer(IExecution execution)
+        public Consumer(IExecution execution, int id)
         {
+            Id = id;
             this._execution = execution;
             _consumerTime = 0;
             InstanceTimerForCheckingQueue();
@@ -66,7 +67,7 @@ namespace WPF.App.Entities
         private void InstanceTimerForWaitingForPending()
         {
             _waitForPending = new Timer();
-            _waitForPending.Enabled = true;
+            _waitForPending.Enabled = false;
             _waitForPending.Interval = TimerInterval;
             _waitForPending.Elapsed += WaitForPending;
 
@@ -91,16 +92,22 @@ namespace WPF.App.Entities
 
         public void CanConsume()
         {
-            Monitor.Enter(_execution.ExecutionQueue);
-
+            StartQueueMonitor();
             if (_execution.ExecutionQueue.Count > 0)
+            {
+                _checkQueue.Stop();
                 _currentCustomer = GetNextCustomer();
+                IsExecuting = true;
+                Consume();
+                IsExecuting = false;
 
-            Monitor.Exit(_execution.ExecutionQueue);
+                _checkQueue.Start();
+            }
+               
 
-            IsExecuting = true;
-            Consume();
-            IsExecuting = false;
+            EndQueueMonitor();
+
+          
 
         }
         public void Consume()
@@ -121,8 +128,8 @@ namespace WPF.App.Entities
                 return;
             }
 
-            if(!_checkQueue.Enabled)
-                _checkQueue.Start();
+            //if(!_checkQueue.Enabled)
+            //    _checkQueue.Start();
 
 
             CheckSteps();
@@ -168,10 +175,7 @@ namespace WPF.App.Entities
 
             steps = _currentCustomer.Sequence.ToUpper().ToCharArray();
 
-            if (_selectedSeat.Status != Status.Unavailable) 
-                SetSeatStatus(Status.Pending); 
-
-            EndSeatMonitor();
+            
             foreach (var step in steps)
             {
                 switch (step)
@@ -192,17 +196,20 @@ namespace WPF.App.Entities
                     //Cancela a execução do cliente
                     case 'X':
                         CancelCustomer();
-                        SetSeatStatus(Status.Available);
                         break;
 
                 }
 
                 if (step == 'X' || seatIsUnavailableAndCustomerGaveUp)
+                {
+                    SetSeatStatus(Status.Available);
                     break;
+                }
+                    
             }
 
             //Adiciona o log do cliente e calcula se ele está novamente na fila
-            AddStepLog?.Invoke(new StepLog
+            AddStepLog?.Invoke(this, new StepLog
             {
                 Customer = _currentCustomer,
                 Session = _customerSession,
@@ -211,11 +218,11 @@ namespace WPF.App.Entities
                 TryCounter = GetTryCounterFromCustomer(_currentCustomer),
                 ThreadId = Id
 
-            }, null);
+            });
 
             //Adiciona no tempo de execução o tempo do cliente
             _execution.CurrentGlobalTime += _currentCustomer.EstimatedTime;
-            _consumerTime += _currentCustomer.EstimatedTime;
+            _consumerTime ++;
 
             _execution.ConsumersFinished.Add(_currentCustomer);
 
@@ -234,7 +241,7 @@ namespace WPF.App.Entities
             _selectedSeat.Color = Util.Red;
 
             _execution.Sessions[_customerSessionIndex].Seats[_customerSeatIndex] = _selectedSeat;
-            AddReportLog?.Invoke($"Cliente {_currentCustomer.ArrivalTime} Posto {Id} {_currentCustomer.SelectedSeat} {_customerSession.StartTime:HH:mm} confirmou.",EventArgs.Empty);
+            AddReportLog?.Invoke(this, $"Cliente {_currentCustomer.ArrivalTime} Posto {Id} {_currentCustomer.SelectedSeat} {_customerSession.StartTime:HH:mm} confirmou.");
         }
         /// <summary>
         /// Cancela a execução do cliente
@@ -242,7 +249,7 @@ namespace WPF.App.Entities
         private void CancelCustomer()
         {
             //Adiciona a linha no relatório
-            AddReportLog?.Invoke($"Cliente {_currentCustomer.ArrivalTime} Posto {Id} {_currentCustomer.SelectedSeat} {_customerSession.StartTime:HH:mm} não confirmou.", EventArgs.Empty);
+            AddReportLog?.Invoke(this, $"Cliente {_currentCustomer.ArrivalTime} Posto {Id} {_currentCustomer.SelectedSeat} {_customerSession.StartTime:HH:mm} não confirmou.");
 
         }
         /// <summary>
@@ -261,8 +268,12 @@ namespace WPF.App.Entities
             //Verifica se o assento está disponível
 
             if (_selectedSeat.Status == Status.Available)
+            {
+                SetSeatStatus(Status.Pending);
+                EndSeatMonitor();
                 return true;
-
+            }
+            
 
             //Se não tiver disponível e o cliente quiser tentar outro
             if (_currentCustomer.OnUnavailableSeat == OnUnavailableSeatBehavior.TryAnother)
@@ -271,7 +282,7 @@ namespace WPF.App.Entities
 
             }
             //Adiciona no relatório que o cliente desistiu
-            AddReportLog?.Invoke($"Cliente {_currentCustomer.ArrivalTime} Posto {Id} {_currentCustomer.SelectedSeat} {_customerSession.StartTime:HH:mm} desistiu.",null);
+            AddReportLog?.Invoke(this, $"Cliente {_currentCustomer.ArrivalTime} Posto {Id} {_currentCustomer.SelectedSeat} {_customerSession.StartTime:HH:mm} desistiu.");
 
             return false;
         }

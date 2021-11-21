@@ -15,5 +15,7 @@ namespace WPF.App.Entities
         public List<Customer> ConsumersFinished { get; set; }
         public List<Customer> ProducerFinished { get; set; }
         public int CurrentGlobalTime { get; set; }
+
+        public event EventHandler<Customer> TryAnotherSeat;
     }
 }

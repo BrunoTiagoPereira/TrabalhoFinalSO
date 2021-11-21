@@ -114,7 +114,11 @@ namespace WPF.App.Views
 
         private void OnReportFinished(object sender, EventArgs e)
         {
-            IsContentLoaded = true;
+            Dispatcher.Invoke(() =>
+            {
+                IsContentLoaded = true;
+            });
+
         }
 
         #region FileHandle

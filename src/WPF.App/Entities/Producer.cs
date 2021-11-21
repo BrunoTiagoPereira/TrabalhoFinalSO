@@ -21,6 +21,7 @@ namespace WPF.App.Entities
         private int _waitForNext;
         private int _lastTimeAdded;
         public List<Customer> Customers { get; set; }
+        public List<Customer> _customersToTryAnotherSeat;
         public bool IsExecuting { get; set; }
 
         //Porcentagem garantidade para clientes meia
@@ -39,8 +40,13 @@ namespace WPF.App.Entities
 
             FilterAvailableSeats();
             InstanceTimerForAddingToQueue();
-            
+
+            _customersToTryAnotherSeat = new List<Customer>();
+            _execution.TryAnotherSeat += TryAnotherSeat;
+
         }
+
+       
         #region Instances
         private void InstanceTimerForAddingToQueue()
         {
@@ -67,21 +73,20 @@ namespace WPF.App.Entities
             }
 
             _addCustomersToQueue.Stop();
-               
 
+            StartQueueMonitor();
+            StartAllSessionsMonitor();
+
+            AddCustomersToQueue(_customersToTryAnotherSeat);
 
             if (ShouldAddToQueue())
             {
-
-                StartQueueMonitor();
-                StartAllSessionsMonitor();
                 var customersToAdd = GetCustomers();
                 AddCustomersToQueue(customersToAdd);
-                EndAllSessionsMonitor();
-                EndQueueMonitor();
-
-
             }
+
+            EndAllSessionsMonitor();
+            EndQueueMonitor();
 
             _addCustomersToQueue.Start();
 
@@ -98,8 +103,6 @@ namespace WPF.App.Entities
      
         private void FilterAvailableSeats()
         {
-
-
             var customersToRemove = new List<Customer>();
             foreach (var customer in Customers)
             {
@@ -139,9 +142,6 @@ namespace WPF.App.Entities
                 {
                     Thread.Sleep(customer.EstimatedTime*1000);
                 }
-            
-                
-
             }
 
             _execution.ProducerFinished.AddRange(customerToAdd);
@@ -296,6 +296,10 @@ namespace WPF.App.Entities
             return customerSessionIndex;
         }
 
+        private void TryAnotherSeat(object sender, Customer e)
+        {
+            _customersToTryAnotherSeat.Add(e);
+        }
         private void Finish()
         {
             IsExecuting = false;
