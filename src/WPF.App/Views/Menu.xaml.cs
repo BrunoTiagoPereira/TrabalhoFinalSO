@@ -30,7 +30,7 @@ namespace WPF.App.Views
         private readonly INotifyService _notifiyService;
         private readonly IReport _report;
         private readonly IExecution _execution;
-        public const int MaxAvailableThreads = 5;
+        public const decimal MaxAvailableThreadsPercentage = 0.001m;
         public object Parameter { get; set; }
         public Type TypeScreen { get; set; }
 
@@ -138,6 +138,7 @@ namespace WPF.App.Views
         {
             InitializeComponent();
 
+   
             Sessions = new List<Session>();
             Customers = new List<Customer>();
        
@@ -165,7 +166,14 @@ namespace WPF.App.Views
         public void InstanceThreadsList()
         {
             ThreadsListItems = new ObservableCollection<ThreadListItem>();
-            for (int i = 1; i <= MaxAvailableThreads; i++)
+            //Verifica a quantiadade de Threads disponíveis pra execução e busca 0.001% delas
+            var workerThreads = 0;
+            var portThreads = 0;
+            ThreadPool.GetAvailableThreads(out workerThreads, out portThreads);
+
+            var maxAvaiableThreads = (int)(workerThreads * MaxAvailableThreadsPercentage);
+
+            for (int i = 1; i <= maxAvaiableThreads; i++)
             {
                 ThreadsListItems.Add(new ThreadListItem { Text= (i != 1) ? $"{i} cabines" : $"{i} cabine", Value=i});
             }

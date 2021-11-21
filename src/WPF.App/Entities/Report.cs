@@ -115,7 +115,11 @@ namespace WPF.App.Entities
         private void CheckFinished(object sender, ElapsedEventArgs e)
         {
             Monitor.Enter(_execution.Logs);
-            if (_execution.ProducerFinished.Count==_execution.Logs.Count(l => l.TryCounter==0)&&
+            Monitor.Enter(_execution.ProducerFinished);
+
+            var executionLog = _execution.Logs;
+            var executionProducerFinished = _execution.ProducerFinished;
+            if (executionProducerFinished.Count==executionLog.Count(l => l.TryCounter==0)&&
                 !_producer.IsExecuting)
             {
                 _consumers.ForEach(c=>c.Finish());
@@ -125,7 +129,9 @@ namespace WPF.App.Entities
                 OnReportFinished?.Invoke(null,null);
                 return;
             }
+
             Monitor.Exit(_execution.Logs);
+            Monitor.Exit(_execution.ProducerFinished);
         }
 
         #endregion
