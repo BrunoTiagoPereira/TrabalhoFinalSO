@@ -22,5 +22,10 @@ namespace WPF.App.Entities
         //Data de inicio
         public DateTime StartTime { get; set; }
 
+        public bool HasCustomers
+        {
+            get => Seats.Any(s => s.Status == Status.Unavailable);
+
+        }
     }
 }

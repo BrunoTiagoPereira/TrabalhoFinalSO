@@ -15,20 +15,21 @@ namespace WPF.App.Entities
     {
         
         private readonly IExecution _execution;
-        private readonly bool _useWaitingForNextCustomer;
         private Timer _addCustomersToQueue;
+        private readonly bool _shouldWaitForNextCustomer;
         private int _currentTime;
         private int _waitForNext;
         private int _lastTimeAdded;
         public List<Customer> Customers { get; set; }
         public List<Customer> _customersToTryAnotherSeat;
+        
         public bool IsExecuting { get; set; }
 
         //Porcentagem garantidade para clientes meia
         private const decimal HalfPricePercentage = 0.4M;
 
 
-        public Producer(List<Customer> customers, IExecution execution, bool useWaitingForNextCustomer)
+        public Producer(List<Customer> customers, IExecution execution, bool shouldWaitForNextCustomer)
         {
             IsExecuting = true;
             Customers = customers;
@@ -36,7 +37,7 @@ namespace WPF.App.Entities
             _currentTime = 1;
             _waitForNext = 0;
             _lastTimeAdded = 1;
-            _useWaitingForNextCustomer = useWaitingForNextCustomer;
+            _shouldWaitForNextCustomer = shouldWaitForNextCustomer;
 
             FilterAvailableSeats();
             InstanceTimerForAddingToQueue();
@@ -135,12 +136,6 @@ namespace WPF.App.Entities
                 else
                 {
                     _execution.ExecutionQueue.Add(customer);
-                }
-
-
-                if (_useWaitingForNextCustomer)
-                {
-                    Thread.Sleep(customer.EstimatedTime*1000);
                 }
             }
 
@@ -271,7 +266,10 @@ namespace WPF.App.Entities
             while ((currentCustomer = GetNextCustomer())!=null)
             {
                 customersToAdd.Add(currentCustomer);
-                _waitForNext = currentCustomer.TimeWaitForNext;
+
+                if (_shouldWaitForNextCustomer)
+                    _waitForNext = currentCustomer.TimeWaitForNext;
+
             }
 
             return customersToAdd;

@@ -30,11 +30,14 @@ namespace WPF.App.Views
 
         public MovieTemplate(IEnumerable<Seat> seats)
         {
+        
             InitializeComponent();
 
             DataContext = this;
 
             Seats = new ObservableCollection<Seat>(seats);
+
+
 
         }
 

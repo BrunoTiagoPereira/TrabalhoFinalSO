@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,8 +15,11 @@ namespace WPF.App.Entities
         public List<StepLog> Logs { get; set; }
         public List<Customer> ConsumersFinished { get; set; }
         public List<Customer> ProducerFinished { get; set; }
+      
+        public List<int> CurrentConsumersTime { get; set; }
         public int CurrentGlobalTime { get; set; }
 
         public event EventHandler<Customer> TryAnotherSeat;
+        public event EventHandler OnCurrentGlobalTimeChanged;
     }
 }

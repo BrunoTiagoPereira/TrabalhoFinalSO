@@ -9,7 +9,7 @@
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid Background="AliceBlue">
      
-        <materialDesign:DrawerHost x:Name="Host" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="7" Grid.RowSpan="7">
+        <materialDesign:DrawerHost x:Name="Host" Grid.Column="0" Grid.Row="0">
             <materialDesign:DrawerHost.LeftDrawerContent>
                 <StackPanel Margin="16">
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -36,6 +36,27 @@
                     </ListView>
                 </StackPanel>
             </materialDesign:DrawerHost.LeftDrawerContent>
+            <materialDesign:DrawerHost.RightDrawerContent>
+                <StackPanel Margin="16">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Style="{StaticResource MaterialDesignHeadline6TextBlock}" FontSize="15">Configurações Adicionais</TextBlock>
+                    </StackPanel>
+                    <ListView>
+                        <ListViewItem>
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <ToggleButton Width="130" HorizontalAlignment="Center" Margin="0 0 10 0" IsChecked="{Binding ShouldWaitForNextCustomer}"/>
+                                <TextBlock Text="Usar tempo até o próximo cliente (Produtor)" HorizontalAlignment="Center" TextWrapping="Wrap" ></TextBlock>
+                            </StackPanel>
+                        </ListViewItem>
+                        <ListViewItem>
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <ToggleButton Width="130" HorizontalAlignment="Center" Margin="0 0 10 0" IsChecked="{Binding  ShouldWaitCustomerTime}"/>
+                                <TextBlock Text="Usar tempo de espera do cliente (Consumir)" TextWrapping="Wrap" HorizontalAlignment="Center" ></TextBlock>
+                            </StackPanel>
+                        </ListViewItem>
+                    </ListView>
+                </StackPanel>
+            </materialDesign:DrawerHost.RightDrawerContent>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition></ColumnDefinition>
@@ -58,8 +79,24 @@
                     <RowDefinition></RowDefinition>
                 </Grid.RowDefinitions>
 
+
+                <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4">
+                    <TextBlock HorizontalAlignment="Center"   Style="{StaticResource MaterialDesignButtonTextBlock}" Text="{Binding CurrentTime, StringFormat='Tempo Atual: {0}'}"></TextBlock>
+                </StackPanel>
                 <StackPanel Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="5">
                     <TextBlock HorizontalAlignment="Center"  Style="{StaticResource MaterialDesignButtonTextBlock}" Text="Escalonamento Cinema"></TextBlock>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Grid.Column="6" Grid.ColumnSpan="2" >
+                    <Button 
+                        Command="{x:Static materialDesign:DrawerHost.OpenDrawerCommand}"
+                        IsEnabled="{Binding EnableImport}"
+                        CommandParameter="{x:Static Dock.Right}" Width="60">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Settings" Width="30" Height="25"></materialDesign:PackIcon>
+                        </StackPanel>
+
+                    </Button>
                 </StackPanel>
 
                 <StackPanel Grid.Row="3" Grid.RowSpan="2" Grid.Column="1" Grid.ColumnSpan="2">
@@ -68,12 +105,17 @@
                 </StackPanel>
                 <StackPanel Grid.Row="3" Grid.RowSpan="2" Grid.Column="3" Grid.ColumnSpan="3">
                     <ComboBox materialDesign:HintAssist.Hint="Cabines" 
+                              SelectionChanged="OnThreadsCounterChanged"
+                              IsEnabled="{Binding EnableImport}"
+                              ItemsSource="{Binding ThreadsListItems}"
                               SelectedItem="{Binding SelectThreadsCounter}"  HorizontalAlignment="Center" Width="150">
-                        <ComboBoxItem>1</ComboBoxItem>
-                        <ComboBoxItem>2</ComboBoxItem>
-                        <ComboBoxItem>3</ComboBoxItem>
-                        <ComboBoxItem>4</ComboBoxItem>
-                        <ComboBoxItem>5</ComboBoxItem>
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Text}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
                     </ComboBox>
                 </StackPanel>
                 <StackPanel Grid.Row="3" Grid.RowSpan="2" Grid.Column="6" Grid.ColumnSpan="2">
@@ -81,11 +123,14 @@
                     <TextBlock Text="{Binding CustomersLineCount, StringFormat='Lidos - {0}'}" HorizontalAlignment="Center" Margin="0 20 0 0" ></TextBlock>
                 </StackPanel>
 
-                <StackPanel Grid.Row="5" Grid.Column="2" Grid.ColumnSpan="5">
+               
+                <StackPanel Grid.Row="5" Grid.Column="2" Grid.ColumnSpan="5" >
 
                     <Button IsEnabled="{Binding IsContentLoaded}" 
                             Command="{x:Static materialDesign:DrawerHost.OpenDrawerCommand}"
                             CommandParameter="{x:Static Dock.Left}" Width="200">Mostrar Resultados</Button>
+
+                   
                 </StackPanel>
             </Grid>
         </materialDesign:DrawerHost>

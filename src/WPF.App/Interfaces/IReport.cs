@@ -16,8 +16,10 @@ namespace WPF.App.Interfaces
         public Task Generate();
 
         //Tarefa para construir o relatório
-        public void Build(List<Session> sessions, List<Customer> customers, int threads);
+        public void Build(List<Customer> customers, int threads, bool shouldWaitForNextCustomer, bool shouldWaitCustomerTime);
 
         public event EventHandler OnReportFinished;
+        //Evento quando o tempo da aplicação for alterado
+        public event EventHandler OnCurrentGlobalTimeChange;
     }
 }

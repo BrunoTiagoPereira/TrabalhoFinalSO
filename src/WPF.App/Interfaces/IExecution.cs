@@ -23,5 +23,8 @@ namespace WPF.App.Interfaces
 
         //Evento quando o cliente precisa adicionar um cliente em uma nova cadeira
         public event EventHandler<Customer> TryAnotherSeat;
+
+        //Tempo de cada thread
+        public List<int> CurrentConsumersTime { get; set; }
     }
 }

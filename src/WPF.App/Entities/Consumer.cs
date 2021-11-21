@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using WPF.App.Helpers;
 using WPF.App.Interfaces;
 using Timer = System.Timers.Timer;
@@ -23,13 +24,12 @@ namespace WPF.App.Entities
         private Timer _checkQueue;
 
         private Timer _waitForPending;
+
+
+        private bool _shouldWaitCustomerTime;
     
        
         private Customer _currentCustomer;
-
-        private int _consumerTime;
-
-        
         private int _customerSessionIndex;
         private int _customerSeatIndex;
         private Session _customerSession;
@@ -39,12 +39,13 @@ namespace WPF.App.Entities
 
         public static event EventHandler<StepLog> AddStepLog; 
         public static event EventHandler<string> AddReportLog; 
+        public static event EventHandler OnCurrentGlobalTimeChanged; 
         #endregion
-        public Consumer(IExecution execution, int id)
+        public Consumer(IExecution execution, int id, bool shouldWaitCustomerTime)
         {
             Id = id;
+            _shouldWaitCustomerTime = shouldWaitCustomerTime;
             this._execution = execution;
-            _consumerTime = 0;
             InstanceTimerForCheckingQueue();
             InstanceTimerForWaitingForPending();
 
@@ -78,6 +79,7 @@ namespace WPF.App.Entities
         private void WaitForPending(object sender, System.Timers.ElapsedEventArgs e)
         {
             CanConsumeSeat();
+            
         }
 
         private void CheckQueue(object sender, System.Timers.ElapsedEventArgs e)
@@ -87,7 +89,8 @@ namespace WPF.App.Entities
                 CurrentThread = new Task(CanConsume);
                 CurrentThread.Start();
             }
-           
+
+
         }
 
         public void CanConsume()
@@ -112,10 +115,12 @@ namespace WPF.App.Entities
         }
         public void Consume()
         {
+            _execution.CurrentConsumersTime[Id - 1]++;
             BuildCustomerInfo();
             IsExecuting = true;
             ExecuteCustomer();
             IsExecuting = false;
+           
         }
 
         private void ExecuteCustomer()
@@ -127,10 +132,6 @@ namespace WPF.App.Entities
                 EnterPending();
                 return;
             }
-
-            //if(!_checkQueue.Enabled)
-            //    _checkQueue.Start();
-
 
             CheckSteps();
 
@@ -208,6 +209,7 @@ namespace WPF.App.Entities
                     
             }
 
+
             //Adiciona o log do cliente e calcula se ele está novamente na fila
             AddStepLog?.Invoke(this, new StepLog
             {
@@ -220,9 +222,24 @@ namespace WPF.App.Entities
 
             });
 
+
+            if (_shouldWaitCustomerTime)
+            {
+                Thread.Sleep(_currentCustomer.EstimatedTime*1000);
+            }
+
+            _execution.CurrentConsumersTime[Id - 1]+=_currentCustomer.EstimatedTime;
+
             //Adiciona no tempo de execução o tempo do cliente
             _execution.CurrentGlobalTime += _currentCustomer.EstimatedTime;
-            _consumerTime ++;
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                OnCurrentGlobalTimeChanged?.Invoke(this, EventArgs.Empty);
+            });
+           
+
+            
+           
 
             _execution.ConsumersFinished.Add(_currentCustomer);
 
@@ -236,12 +253,17 @@ namespace WPF.App.Entities
         private void Pay()
         {
             //Muda o status na sessão e adiciona no relatório a informação
-            _selectedSeat.Status = Status.Unavailable;
-            _selectedSeat.Customer = _currentCustomer;
-            _selectedSeat.Color = Util.Red;
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                _selectedSeat.Status = Status.Unavailable;
+                _selectedSeat.Customer = _currentCustomer;
+                _selectedSeat.Color = Util.Red;
 
-            _execution.Sessions[_customerSessionIndex].Seats[_customerSeatIndex] = _selectedSeat;
-            AddReportLog?.Invoke(this, $"Cliente {_currentCustomer.ArrivalTime} Posto {Id} {_currentCustomer.SelectedSeat} {_customerSession.StartTime:HH:mm} confirmou.");
+                _execution.Sessions[_customerSessionIndex].Seats[_customerSeatIndex] = _selectedSeat;
+                AddReportLog?.Invoke(this,
+                    $"Cliente {_currentCustomer.ArrivalTime} Posto {Id} {_currentCustomer.SelectedSeat} {_customerSession.StartTime:HH:mm} confirmou.");
+            });
+
         }
         /// <summary>
         /// Cancela a execução do cliente

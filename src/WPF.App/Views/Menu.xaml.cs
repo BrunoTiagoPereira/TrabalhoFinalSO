@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -29,6 +30,7 @@ namespace WPF.App.Views
         private readonly INotifyService _notifiyService;
         private readonly IReport _report;
         private readonly IExecution _execution;
+        public const int MaxAvailableThreads = 5;
         public object Parameter { get; set; }
         public Type TypeScreen { get; set; }
 
@@ -39,9 +41,37 @@ namespace WPF.App.Views
         public int RowDimension { get; set; }
         public int ColumnDimension { get; set; }
 
+
+       
         #endregion
 
         #region DependencyProperties
+
+        public static readonly DependencyProperty CurrentTimeProperty = DependencyProperty.Register(
+            "CurrentTime", typeof(int), typeof(Menu), new PropertyMetadata(0));
+
+        public int CurrentTime
+        {
+            get { return (int)GetValue(CurrentTimeProperty); }
+            set { SetValue(CurrentTimeProperty, value); }
+        }
+        public static readonly DependencyProperty ShouldWaitForNextCustomerProperty = DependencyProperty.Register(
+            "ShouldWaitForNextCustomer", typeof(bool), typeof(Menu), new PropertyMetadata(false));
+
+        public bool ShouldWaitForNextCustomer
+        {
+            get { return (bool)GetValue(ShouldWaitForNextCustomerProperty); }
+            set { SetValue(ShouldWaitForNextCustomerProperty, value); }
+        }
+
+        public static readonly DependencyProperty ShouldWaitCustomerTimeProperty = DependencyProperty.Register(
+            "ShouldWaitCustomerTime", typeof(bool), typeof(Menu), new PropertyMetadata(false));
+
+        public bool ShouldWaitCustomerTime
+        {
+            get { return (bool)GetValue(ShouldWaitCustomerTimeProperty); }
+            set { SetValue(ShouldWaitCustomerTimeProperty, value); }
+        }
 
         public int RoomConfigLineCount
         {
@@ -85,12 +115,21 @@ namespace WPF.App.Views
 
 
         public static readonly DependencyProperty SelectThreadsCounterProperty = DependencyProperty.Register(
-            "SelectThreadsCounter", typeof(int), typeof(Menu), new PropertyMetadata(1));
+            "SelectThreadsCounter", typeof(ThreadListItem), typeof(Menu), new PropertyMetadata(null));
 
-        public int SelectThreadsCounter
+        public ThreadListItem SelectThreadsCounter
         {
-            get { return (int)GetValue(SelectThreadsCounterProperty); }
+            get { return (ThreadListItem)GetValue(SelectThreadsCounterProperty); }
             set { SetValue(SelectThreadsCounterProperty, value); }
+        }
+
+        public static readonly DependencyProperty ThreadsListItemsProperty = DependencyProperty.Register(
+            "ThreadsListItems", typeof(ObservableCollection<ThreadListItem>), typeof(Menu), new PropertyMetadata(default(ObservableCollection<ThreadListItem>)));
+
+        public ObservableCollection<ThreadListItem> ThreadsListItems
+        {
+            get { return (ObservableCollection<ThreadListItem>)GetValue(ThreadsListItemsProperty); }
+            set { SetValue(ThreadsListItemsProperty, value); }
         }
         
         #endregion
@@ -109,14 +148,33 @@ namespace WPF.App.Views
 
             DataContext = this;
             _report.OnReportFinished += OnReportFinished;
+            _report.OnCurrentGlobalTimeChange += OnCurrentGlobalTimeChanged;
+            InstanceThreadsList();
+            
 
         }
 
+        private void OnCurrentGlobalTimeChanged(object sender, EventArgs e)
+        {
+            CurrentTime = _execution.CurrentGlobalTime;
+        }
+        #region Instance
+
+        public void InstanceThreadsList()
+        {
+            ThreadsListItems = new ObservableCollection<ThreadListItem>();
+            for (int i = 1; i <= MaxAvailableThreads; i++)
+            {
+                ThreadsListItems.Add(new ThreadListItem { Text= (i != 1) ? $"{i} cabines" : $"{i} cabine", Value=i});
+            }
+        }
+        #endregion
         private void OnReportFinished(object sender, EventArgs e)
         {
-            Dispatcher.Invoke(() =>
+            Application.Current.Dispatcher.Invoke(() =>
             {
                 IsContentLoaded = true;
+                _notifiyService.Alert(new Notification{Type = AlertType.Success, Text = "Algoritmo executado com sucesso!"});
             });
 
         }
@@ -313,42 +371,31 @@ namespace WPF.App.Views
         private void CheckImport()
         {
             //Se ainda possuir sessões ou clientes, definir arquivo como não carregado ainda
-            if (Customers.Count == 0 || Sessions.Count == 0)
+            if (Customers.Count == 0 || Sessions.Count == 0 || SelectThreadsCounter == null)
                 return;
 
             EnableImport = false;
 
             ////Inclui os clientes na sessão
-            MergeCustomerSessions();
+            CreateSessionsSeats();
 
+            _notifiyService.Alert(new Notification{Type = AlertType.Warning, Text = "Executando o algortimo..."});
             //Executa o algoritmo do relatório
-            _report.Build(Sessions,Customers,SelectThreadsCounter);
+            _report.Build(Customers,SelectThreadsCounter.Value, ShouldWaitForNextCustomer,ShouldWaitCustomerTime);
 
-
-
-            //IsContentLoaded = true;
-            
         }
 
         /// <summary>
-        /// Inclui os clientes na sessão
+        /// Cria os assentos das sessões
         /// </summary>
-        public void MergeCustomerSessions()
+        public void CreateSessionsSeats()
         {
             foreach (var session in Sessions)
             {
-
-                //var sessionCustomers = Customers.Where(c => c.SelectedSession == session.StartTime).ToList();
-
-                //session.Customers = sessionCustomers;
-
                 session.Seats = CreateSeats(ColumnDimension, RowDimension);
             }
 
             _execution.Sessions = Sessions;
-            
-
-
         }
 
         /// <summary>
@@ -397,15 +444,11 @@ namespace WPF.App.Views
         /// </summary>
         private void NavigateToSession(object sender, RoutedEventArgs e)
         {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                var sessionId = (Guid)((Button)sender).Tag;
+            var sessionId = (Guid)((Button)sender).Tag;
+            var session = Sessions.First(s => s.Id == sessionId);
+            var preview = new MovieTemplate(session.Seats);
+            preview.Show();
 
-                var session = Sessions.First(s => s.Id == sessionId);
-
-                var preview = new MovieTemplate(session.Seats);
-                preview.Show();
-            });
 
         }
         #endregion
@@ -417,5 +460,16 @@ namespace WPF.App.Views
         {
             await _report.Generate();
         }
+
+        private void OnThreadsCounterChanged(object sender, SelectionChangedEventArgs e)
+        {
+            CheckImport();
+        }
+    }
+
+    public class ThreadListItem
+    {
+        public string Text { get; set; }
+        public int Value { get; set; }
     }
 }
