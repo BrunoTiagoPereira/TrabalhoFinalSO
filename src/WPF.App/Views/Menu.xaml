@@ -51,7 +51,7 @@
                         <ListViewItem>
                             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                                 <ToggleButton Width="130" HorizontalAlignment="Center" Margin="0 0 10 0" IsChecked="{Binding  ShouldWaitCustomerTime}"/>
-                                <TextBlock Text="Usar tempo de espera do cliente (Consumir)" TextWrapping="Wrap" HorizontalAlignment="Center" ></TextBlock>
+                                <TextBlock Text="Usar tempo de espera do cliente (Consumidor)" TextWrapping="Wrap" HorizontalAlignment="Center" ></TextBlock>
                             </StackPanel>
                         </ListViewItem>
                     </ListView>

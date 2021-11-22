@@ -118,7 +118,6 @@ namespace WPF.App.Entities
 
         #endregion
 
-
         #region Execution
         /// <summary>
         /// Verifica se pode ser adiciona algum cliente na fila
