@@ -33,6 +33,7 @@ namespace WPF.App
             services.AddSingleton<MainWindow>();
           
             services.AddTransient<Menu>();
+            services.AddTransient<CommandLine>();
             services.AddTransient<INavigationService<IBaseView>,NavigationService>();
             services.AddTransient<INotifyService,NotifyService>();
             services.AddSingleton<IReport, Report>();
@@ -43,7 +44,8 @@ namespace WPF.App
         private void OnStartup(object sender, StartupEventArgs e)
         {
             var mainWindow = _serviceProvider.GetService<MainWindow>();
-            mainWindow.ActiveView = _serviceProvider.GetService<Menu>();
+            //mainWindow.ActiveView = _serviceProvider.GetService<Menu>();
+            mainWindow.ActiveView = _serviceProvider.GetService<CommandLine>();
             mainWindow.Show();
         }
     }

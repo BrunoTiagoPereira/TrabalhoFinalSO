@@ -1,0 +1,89 @@
+﻿<UserControl x:Class="WPF.App.Views.CommandLine"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:local="clr-namespace:WPF.App.Views"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"></BooleanToVisibilityConverter>
+    </UserControl.Resources>
+    <Grid Background="Black">
+        <Grid.ColumnDefinitions>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+
+        <StackPanel  Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="9" Grid.RowSpan="13" >
+            <ListBox x:Name="CommandListBox" ItemsSource="{Binding Commands}" Height="350"  ScrollViewer.VerticalScrollBarVisibility="Hidden"  >
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Visibility="{Binding ShowDevText, Converter={StaticResource BooleanToVisibilityConverter}}" Foreground="White" FontSize="15" Width="auto" Margin="0 0 2 0"    >dev></TextBlock>
+                            <TextBlock
+                            
+                                x:Name="CommandInput"
+                                VerticalAlignment="Top"
+                                Background="Transparent" 
+                                Foreground="{Binding Color}"
+                                FontSize="15"
+                                Width="auto" 
+                                Height="auto"
+                                Text="{Binding Text}"
+                                Margin="0 0 0 0"/>
+                        </StackPanel>
+                     
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </StackPanel>
+
+       <StackPanel Margin="8 0 0 0" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" Grid.ColumnSpan="9" Grid.Row="14" Grid.RowSpan="2" >
+            <TextBlock Visibility="{Binding EnableImport, Converter={StaticResource BooleanToVisibilityConverter}}" Foreground="White" FontSize="15" Width="auto" Margin="0 4 2 0"     FontWeight="Bold">dev></TextBlock>
+            <!--<TextBox Background="Transparent"  BorderBrush="Transparent"  Foreground="Green" FontSize="15" Width="auto" Margin="0 0 0 10" ></TextBox>-->
+           <TextBox
+               x:Name="CommandInput"
+               VerticalAlignment="Top"
+               Height="1500"
+               IsEnabled="{Binding EnableImport}"
+               FontWeight="Bold"
+               Background="Transparent" 
+               BorderBrush="Transparent" 
+               Foreground="#2A579C"
+               FontSize="15"
+               Width="auto" 
+               Margin="0 0 0 0"
+               KeyDown="OnPressKey"/>
+        </StackPanel>
+
+
+    </Grid>
+</UserControl>

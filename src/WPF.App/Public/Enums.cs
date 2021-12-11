@@ -13,4 +13,24 @@ namespace WPF.App.Public
         Warning = 2,
         Error = 3
     }
+    //Tipos de comando
+    public enum CommandType
+    {
+        Log,
+        ConsumersCount,
+        ChangeFileOutputName,
+        Update,
+        FileInputPath,
+        Simulate,
+        Totalize,
+        Finish
+    }
+
+    public enum CommandPriority
+    {
+        Critical,
+        Standard,
+        NoNeed
+
+    }
 }

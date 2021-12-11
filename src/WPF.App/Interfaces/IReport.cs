@@ -14,6 +14,8 @@ namespace WPF.App.Interfaces
 
         //Tarefa para gerar o arquivo do relatório
         public Task Generate();
+        public Task Generate(string filePath);
+        public List<string> ReportLines { get; set; }
 
         //Tarefa para construir o relatório
         public void Build(List<Customer> customers, int threads, bool shouldWaitForNextCustomer, bool shouldWaitCustomerTime);

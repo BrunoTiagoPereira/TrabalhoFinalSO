@@ -54,6 +54,19 @@
                                 <TextBlock Text="Usar tempo de espera do cliente (Consumidor)" TextWrapping="Wrap" HorizontalAlignment="Center" ></TextBlock>
                             </StackPanel>
                         </ListViewItem>
+                        <ListViewItem>
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <Button 
+                                    Click="GoToCommandLine"
+                                     IsEnabled="{Binding EnableImport}"
+                                     Width="60">
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="CodeTags" Width="30" Height="25"></materialDesign:PackIcon>
+                                    </StackPanel>
+
+                                </Button>
+                            </StackPanel>
+                        </ListViewItem>
                     </ListView>
                 </StackPanel>
             </materialDesign:DrawerHost.RightDrawerContent>

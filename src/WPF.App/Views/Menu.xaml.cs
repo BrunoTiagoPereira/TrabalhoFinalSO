@@ -28,9 +28,9 @@ namespace WPF.App.Views
     public partial class Menu : IBaseView
     {
         private readonly INotifyService _notifiyService;
+        private readonly INavigationService<IBaseView> _navigationService;
         private readonly IReport _report;
         private readonly IExecution _execution;
-        public const decimal MaxAvailableThreadsPercentage = 0.001m;
         public object Parameter { get; set; }
         public Type TypeScreen { get; set; }
 
@@ -134,7 +134,7 @@ namespace WPF.App.Views
         
         #endregion
 
-        public Menu(INotifyService notifyService, IReport report, IExecution execution)
+        public Menu(INotifyService notifyService, IReport report, IExecution execution, INavigationService<IBaseView> navigationService)
         {
             InitializeComponent();
 
@@ -146,6 +146,7 @@ namespace WPF.App.Views
             _notifiyService = notifyService;
             _report = report;
             _execution = execution;
+            _navigationService = navigationService;
 
             DataContext = this;
             _report.OnReportFinished += OnReportFinished;
@@ -167,11 +168,7 @@ namespace WPF.App.Views
         {
             ThreadsListItems = new ObservableCollection<ThreadListItem>();
             //Verifica a quantiadade de Threads disponíveis pra execução e busca 0.001% delas
-            var workerThreads = 0;
-            var portThreads = 0;
-            ThreadPool.GetAvailableThreads(out workerThreads, out portThreads);
-
-            var maxAvaiableThreads = (int)(workerThreads * MaxAvailableThreadsPercentage);
+            var maxAvaiableThreads = Util.GetMaxThreadsAvailable();
 
             for (int i = 1; i <= maxAvaiableThreads; i++)
             {
@@ -391,7 +388,7 @@ namespace WPF.App.Views
             EnableImport = false;
 
             ////Inclui os clientes na sessão
-            CreateSessionsSeats();
+            Util.CreateSessionsSeats(_execution,Sessions,ColumnDimension,RowDimension);
 
             _notifiyService.Alert(new Notification{Type = AlertType.Warning, Text = "Executando o algortimo..."});
             //Executa o algoritmo do relatório
@@ -399,59 +396,7 @@ namespace WPF.App.Views
 
         }
 
-        /// <summary>
-        /// Cria os assentos das sessões
-        /// </summary>
-        public void CreateSessionsSeats()
-        {
-            foreach (var session in Sessions)
-            {
-                session.Seats = CreateSeats(ColumnDimension, RowDimension);
-            }
 
-            _execution.Sessions = Sessions;
-        }
-
-        /// <summary>
-        /// Cria as cadeiras para as salas
-        /// </summary>
-        /// <param name="columns">quantidade de colunas</param>
-        /// <param name="rows">quantidade de linhas</param>
-        /// <returns>Lista de cadeiras</returns>
-        private ObservableCollection<Seat> CreateSeats(int columns, int rows)
-        {
-            var seats = new ObservableCollection<Seat>();
-            double width = 800;
-            double height = 450;
-
-            double ellipseWidth = width / columns;
-            double ellipseHeight = height / rows;
-
-            string prefix;
-
-            for (int i = 0; i < rows; i++)
-            {
-                for (int j = 0; j < columns; j++)
-                {
-                    prefix = ((j + 1) > 9) ? "" : "0";
-                    seats.Add(new Seat
-                    {
-                        Identifier = $"{Util.NumberToString(i + 1)}{prefix}{j + 1}",
-                        Width = ellipseWidth,
-                        Height = ellipseHeight,
-                        Color = Util.Blue,
-                        Top = i * (ellipseHeight + 10),
-                        Left = j * (ellipseWidth + 10),
-                        Status = Status.Available,
-                    });
-
-                }
-
-            }
-
-            return seats;
-
-        }
 
         /// <summary>
         /// Mostra o resultado do algoritmo na sessão
@@ -478,6 +423,11 @@ namespace WPF.App.Views
         private void OnThreadsCounterChanged(object sender, SelectionChangedEventArgs e)
         {
             CheckImport();
+        }
+
+        private void GoToCommandLine(object sender, RoutedEventArgs e)
+        {
+            _navigationService.NavigateTo<CommandLine>();
         }
     }
 

@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using System.Windows;
+using System.Windows.Threading;
 using WPF.App.Helpers;
 using WPF.App.Interfaces;
 using WPF.App.Public;
@@ -90,6 +92,7 @@ namespace WPF.App.Entities
         private void ConsumerAddReportLog(object sender, string e)
         {
             ReportLines.Add(e);
+
         }
 
         private void ConsumerAddStepLog(object sender, StepLog e)
@@ -212,6 +215,30 @@ namespace WPF.App.Entities
                 });
             }
 
+        }
+
+        public async Task Generate(string filePath)
+        {
+            //Se o caminho do arquivo for nulo, sair do método
+            if (filePath == null) return;
+            try
+            {
+                await File.WriteAllLinesAsync(filePath, ReportLines);
+
+                _notifyService.Alert(new Notification()
+                {
+                    Text = "Relatório salvo com sucesso!",
+                    Type = AlertType.Success
+                });
+            }
+            catch (Exception e)
+            {
+                _notifyService.Alert(new Notification()
+                {
+                    Text = "Não foi possível salvar o arquivo!",
+                    Type = AlertType.Error
+                });
+            }
         }
 
         /// <summary>
