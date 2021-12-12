@@ -31,29 +31,37 @@ namespace WPF.App.Views
     /// </summary>
     public partial class CommandLine : IBaseView
     {
+
+        #region Props
         private readonly IExecution _execution;
         private readonly IReport _report;
-
-
         public object Parameter { get; set; }
         public Type TypeScreen { get; set; }
 
 
-        //Log = 1,
-        //ConsumersCount = 1,
-        //ChangeFileOutputName = 1,
+        //Caminho do arquivo de output da simulação
         public string OutputFileName { get; set; } = "ResultadoVendaClientes.txt";
+        //Quantidade de postos
         public int ConsumersCount { get; set; } = 1;
+        //Deve logar o resultado no console
         public bool ShouldLogInConsole { get; set; } = true;
+        //Dimensão das linhas das sessões
         public int RowDimension { get; set; }
+        //Dimensão das colunas das sessões
         public int ColumnDimension { get; set; }
+        //Quantidade de linhas importadas
         public int ImportLineCount { get; set; }
-
+        //Clientes
         public List<Customer> Customers { get; set; }
+        //Sessões
         public List<Session> Sessions { get; set; }
-
+        //Últimos comandos usados
         public Stack<string> UsedCommands { get; set; }
 
+
+        #endregion
+
+        #region DependencyProperties
         public static readonly DependencyProperty EnableImportProperty = DependencyProperty.Register(
             "EnableImport", typeof(bool), typeof(CommandLine), new PropertyMetadata(true));
 
@@ -66,9 +74,13 @@ namespace WPF.App.Views
 
         public ObservableCollection<CommandLineText> Commands { get; set; }
 
+
+        #endregion
+
+        #region Ctor
         public CommandLine(IExecution execution, IReport report)
         {
-            this._execution = execution;
+            _execution = execution;
             _report = report;
             InitializeComponent();
 
@@ -81,79 +93,41 @@ namespace WPF.App.Views
             CommandInput.Focus();
             Keyboard.Focus(CommandInput);
         }
-
-        private void OnReportFinished(object? sender, EventArgs e)
-        {
-            Application.Current.Dispatcher.Invoke(GenerateReport);
-        }
-
-        private void ScrollToEnd()
-        {
-            CommandListBox.SelectedIndex = Commands.Count - 1;
-            CommandListBox.ScrollIntoView(CommandListBox.SelectedItem);
-        }
+        #endregion
 
 
-        private void OnPressKey(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter)
-            {
-                string text = CommandInput.Text;
-                CommandInput.Text = "";
-                Commands.Add(new CommandLineText(){Text = text});
-                
-
-                if (text.ToLower() == "clear")
-                {
-                    Commands.Clear();
-                    return;
-                }
-                else if (text.ToLower() == "help")
-                {
-                    WriteHelper();
-                    return;
-                }
-                
-                    
-                
-
-
-                if(!string.IsNullOrWhiteSpace(text))
-                    UsedCommands.Push(text);
-
-                ExecuteCommand(text);
-
-                ScrollToEnd();
-
-            }
-            if (e.Key == Key.F1 && UsedCommands.Count>0)
-                CommandInput.Text = UsedCommands.Pop();
-
-
-        }
-
-       
-
+        #region Execution
+        /// <summary>
+        /// Executa o comando
+        /// </summary>
+        /// <param name="text">texto do comando</param>
         private void ExecuteCommand(string text)
         {
             var commands = new List<Command>();
+            //Valida o comando
             var validation = ValidationHelper.ValidateDevToolsCommand(text, out commands);
 
+            //Se tiver erros retorna os erros
             if (validation.HasErrors)
             {
                 Commands.Add(new CommandLineText
                 {
-                    Text = validation.Errors.Select(e=>e.Error).Aggregate((a,b)=>$"{a}{Environment.NewLine}{b}"),
+                    Text = validation.Errors.Select(e => e.Error).Aggregate((a, b) => $"{a}{Environment.NewLine}{b}"),
                     Color = Util.Red
                 });
                 return;
             }
 
+            //Executa os comandos por prioridade
             ExecuteCommandsByPriority(commands);
 
 
         }
 
+        /// <summary>
+        /// Executa os comandos por prioridade
+        /// </summary>
+        /// <param name="commands">comandos</param>
         private void ExecuteCommandsByPriority(List<Command> commands)
         {
             var noNeed = commands.Where(c => c.CommandPriority == CommandPriority.NoNeed);
@@ -165,8 +139,13 @@ namespace WPF.App.Views
             ExecuteCritical(critical);
         }
 
+        /// <summary>
+        /// Executa os comandos sem prioridade
+        /// </summary>
+        /// <param name="noNeed">comandos</param>
         private void ExecuteNoNeed(IEnumerable<Command> noNeed)
         {
+            //Verifica o tipo, busca o valor no comando e define as variáveis
             foreach (var cmd in noNeed)
             {
                 switch (cmd.Type)
@@ -190,16 +169,22 @@ namespace WPF.App.Views
             }
         }
 
+        /// <summary>
+        /// Executa os comandos padrões
+        /// </summary>
+        /// <param name="standard">comandos padrões</param>
         private void ExecuteStandard(IEnumerable<Command> standard)
         {
-
+            //Busca os comandos de inserir arquivos
             var insertFileCommands = standard.Where(c => c.Type == CommandType.FileInputPath);
 
             foreach (var cmd in insertFileCommands)
             {
+                //Busca o caminho do arquivo
                 var fileName = Regex.Match(cmd.Text, @""".{1,}\.txt""").Captures[0].Value.Replace("\"", "");
                 try
                 {
+                    //Abre o arquivo e importa as informações
                     if (OpenFile(fileName))
                     {
                         Commands.Add(new CommandLineText
@@ -216,7 +201,7 @@ namespace WPF.App.Views
                             Text = $"Não foi possível executar o comando '{cmd.Text}'."
                         });
                     }
-                    
+
                 }
                 catch (Exception)
                 {
@@ -228,21 +213,28 @@ namespace WPF.App.Views
                 }
 
             }
- 
+
         }
 
+        /// <summary>
+        /// Executa os comandos críticos
+        /// </summary>
+        /// <param name="critical">comandos críticos</param>
         private void ExecuteCritical(IEnumerable<Command> critical)
         {
             var hasFinishCommand = critical.ToList().Exists(c => c.Type == CommandType.Finish);
             var hasSimulateCommand = critical.ToList().Exists(c => c.Type == CommandType.Simulate);
             var hasTotalizeCommand = critical.ToList().Exists(c => c.Type == CommandType.Totalize);
 
+            //Tem comandos para finalizar
             if (hasFinishCommand)
                 Application.Current.Shutdown();
 
+            //Tem comandos para simular
             if (hasSimulateCommand)
                 Simulate();
 
+            //Verifica se ao totalizar já foi executado o algortimo
             if (hasTotalizeCommand)
             {
                 if (_execution.Logs.Count == 0)
@@ -262,7 +254,12 @@ namespace WPF.App.Views
 
         }
 
-       
+
+        #endregion
+
+
+
+
 
 
         #region FileHandle
@@ -479,12 +476,10 @@ namespace WPF.App.Views
                 return false;
             }
 
+            //Limpa as últimas execuções
             ClearPreviousExecution();
 
-
-            //EnableImport = false;
-
-            ////Inclui os clientes na sessão
+            //Inclui os clientes na sessão
             Util.CreateSessionsSeats(_execution, Sessions, ColumnDimension, RowDimension);
 
             Commands.Add(new CommandLineText
@@ -500,18 +495,9 @@ namespace WPF.App.Views
 
         }
 
-        private void ClearPreviousExecution()
-        {
-            _execution.ProducerFinished = new List<Customer>();
-            _execution.ExecutionQueue = new List<Customer>();
-            _execution.ConsumersFinished = new List<Customer>();
-            _execution.CurrentConsumersTime = _execution?.CurrentConsumersTime?.Select(c => 0).ToList();
-            _execution.CurrentGlobalTime = 0;
-            _execution.Logs = new List<StepLog>();
-        }
-
+    
         /// <summary>
-        /// Gera o relatório
+        /// Gera o relatório beseado no tipo de output
         /// </summary>
         private async void GenerateReport()
         {
@@ -544,6 +530,9 @@ namespace WPF.App.Views
 
         }
 
+        /// <summary>
+        /// Totaliza os clientes que desistiram e confirmaram e mostra no console
+        /// </summary>
         private void Totalize()
         {
             string confirmed = $"Clientes confirmados: {_execution.Logs.Count(l => l.Result == CustomerResult.Confirm)}";
@@ -567,6 +556,9 @@ namespace WPF.App.Views
 
 
         #region Util
+        /// <summary>
+        /// Escreve o texto de ajuda
+        /// </summary>
         private void WriteHelper()
         {
             StringBuilder sb = new StringBuilder();
@@ -588,6 +580,81 @@ namespace WPF.App.Views
                 Text = sb.ToString(),
                 Color = Util.Green
             });
+        }
+        /// <summary>
+        /// Leva a tela para o final
+        /// </summary>
+        private void ScrollToEnd()
+        {
+            CommandListBox.SelectedIndex = Commands.Count - 1;
+            CommandListBox.ScrollIntoView(CommandListBox.SelectedItem);
+        }
+        private void ClearPreviousExecution()
+        {
+            _execution.ProducerFinished = new List<Customer>();
+            _execution.ExecutionQueue = new List<Customer>();
+            _execution.ConsumersFinished = new List<Customer>();
+            _execution.CurrentConsumersTime = _execution?.CurrentConsumersTime?.Select(c => 0).ToList();
+            _execution.CurrentGlobalTime = 0;
+            _execution.Logs = new List<StepLog>();
+        }
+
+
+        #endregion
+
+        #region Events
+        //Quando é finalizado a execução do relatório
+        private void OnReportFinished(object? sender, EventArgs e)
+        {
+            Application.Current.Dispatcher.Invoke(GenerateReport);
+        }
+
+        /// <summary>
+        /// Quando é pressionado uma tecla
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void OnPressKey(object sender, KeyEventArgs e)
+        {
+            //Se for enter executa o comando
+            if (e.Key == Key.Enter)
+            {
+                //Adiciona o comando como executado
+                string text = CommandInput.Text;
+                CommandInput.Text = "";
+                Commands.Add(new CommandLineText() { Text = text });
+
+
+                //Limpa o console
+                if (text.ToLower() == "clear")
+                {
+                    Commands.Clear();
+                    return;
+                }
+
+                //Escreve o testo de ajuda
+                if (text.ToLower() == "help")
+                {
+                    WriteHelper();
+                    return;
+                }
+
+                //Se o comando não for nulo adiciona nos últimos comandos utilizados
+                if (!string.IsNullOrWhiteSpace(text))
+                    UsedCommands.Push(text);
+
+                //Executa o comando
+                ExecuteCommand(text);
+
+                //leva a tela para o final
+                ScrollToEnd();
+
+            }
+            //Se for F1 preenche o texto com o útlimo comando utilizado
+            if (e.Key == Key.F1 && UsedCommands.Count > 0)
+                CommandInput.Text = UsedCommands.Pop();
+
+
         }
 
         #endregion

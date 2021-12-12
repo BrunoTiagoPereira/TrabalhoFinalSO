@@ -137,17 +137,27 @@ namespace WPF.App.Helpers
             execution.Sessions = sessions;
         }
 
+        /// <summary>
+        /// Padroniza e cria os comandos baseado em um texto de comandos
+        /// </summary>
+        /// <param name="commandText">texto do comando</param>
+        /// <returns>Lista de comandos em texto</returns>
+        /// <exception cref="InvalidOperationException">Caso alguma comando seja inválido lança uma execeção</exception>
         public static List<string> GetNormalizedCommands(string commandText)
         {
             var commands = new List<string>();
+            //Separa os comandos por espaço e filtra os se naõ são nulos, deixa minúsculo e tira os espaços em volta
             var initialCommands = commandText.Split(' ')
                                                         .Where(s=>!string.IsNullOrWhiteSpace(s))
                                                         .Select(s=>s.ToLower().Trim()).ToList();
 
+            //Caso tenha algum caminho de arquivo padroniza pra um comando válido, caso seja válido
             initialCommands = NormalizeFilePaths(initialCommands);
 
+            //Para cada comando
             for (int i = 0; i < initialCommands.Count; i++)
             {
+                //Caso ele não tenha "-" só adiciona o comando
                 var command = initialCommands[i];
                 if (!command.Contains('-'))
                 {
@@ -155,12 +165,15 @@ namespace WPF.App.Helpers
                     continue;
                 }
 
+                //Verifica se o comando com hífen é valido
                 if (!CommandHasMinusSymbolValid(command))
                     throw new InvalidOperationException($"comando '{initialCommands[i]}' inválido");
 
                 try
                 {
+                    //Concatena ele e a próxima posição do array como um comando
                     commands.Add($"{initialCommands[i]} {initialCommands[i+1]}");
+                    //Remove os dois
                     initialCommands.RemoveAt(i+1);
                 }
                 catch (Exception){ throw new InvalidOperationException($"comando '{initialCommands[i]}' inválido");}
@@ -171,6 +184,11 @@ namespace WPF.App.Helpers
             return commands;
         }
 
+        /// <summary>
+        /// Padroniza os caminhos de arquivo
+        /// </summary>
+        /// <param name="commands">Comandos</param>
+        /// <returns>Comandos normalizados</returns>
         private static List<string> NormalizeFilePaths(List<string> commands)
         {
             var normalizedCommands = new List<string>();
@@ -178,14 +196,15 @@ namespace WPF.App.Helpers
             string spaceBefore;
             bool containsDoubleQuoteAndSpaceBetween;
 
-            // [""a","e","b.txt"]-> "a e b.txt"
             for (int i = 0; i < commands.Count; i++)
             {
+             
                 containsDoubleQuoteAndSpaceBetween = commands[i].Count(c => c == '\"') == 1;
 
+                //Se o comando tiver espaço e for um caminho: "Arquivo Teste.txt"
                 if (containsDoubleQuoteAndSpaceBetween)
                 {
-                    //newCmd += commands[i];
+                    //Vai concatenando as posições: [""a","e","b.txt"]-> "a e b.txt"
                     do
                     {
                         spaceBefore = string.IsNullOrWhiteSpace(newCmd) ? "" : " ";
@@ -197,6 +216,7 @@ namespace WPF.App.Helpers
                     normalizedCommands.Add(newCmd);
                     newCmd = "";
                 }
+                //Caso não só adiciona o comando
                 else
                 {
                     normalizedCommands.Add(commands[i]);
@@ -208,12 +228,22 @@ namespace WPF.App.Helpers
         }
 
 
+        /// <summary>
+        /// Verfica se o comando de símbolo é válido 
+        /// </summary>
+        /// <param name="command">texto do comando</param>
+        /// <returns>true se for válido</returns>
         public static bool CommandHasMinusSymbolValid(string command)
         {
             var normalized = command.ToLower();
             var validCommands = new List<string>{ "-in", "-out", "-pontos", "-log" };
             return validCommands.Exists(c=>c==normalized);
         }
+        /// <summary>
+        /// Busca a prioridade do comando baseado no tipo
+        /// </summary>
+        /// <param name="type">Tipo do comando</param>
+        /// <returns>A prioridade do comando</returns>
         public static CommandPriority GetCommandPriorityByType(CommandType type)
         {
             var priorities = new Dictionary<CommandType, CommandPriority>

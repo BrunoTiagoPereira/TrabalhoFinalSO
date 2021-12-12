@@ -26,6 +26,7 @@ namespace WPF.App.Public
         Finish
     }
 
+    //Prioridade do comando
     public enum CommandPriority
     {
         Critical,
@@ -34,6 +35,7 @@ namespace WPF.App.Public
 
     }
 
+    //Resultado do cliente
     public enum CustomerResult
     {
         Confirm,

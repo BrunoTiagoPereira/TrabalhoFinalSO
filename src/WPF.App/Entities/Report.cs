@@ -128,9 +128,6 @@ namespace WPF.App.Entities
                 _consumers.ForEach(c=>c.Finish());
                 _checkFinished.Stop();
                 WriteThreadsResult();
-                //Monitor.Exit(_execution.Logs);
-                //Monitor.Exit(_execution.ProducerFinished);
-
                 OnReportFinished?.Invoke(null,null);
             }
             Monitor.Exit(_execution.Logs);
@@ -219,6 +216,11 @@ namespace WPF.App.Entities
 
         }
 
+        /// <summary>
+        /// Gera o relatório no caminho especificado
+        /// </summary>
+        /// <param name="filePath">caminho do arquivo</param>
+        /// <returns>se a execução foi válida e a mensagem de retorno</returns>
         public async Task<(bool valid, string message)> Generate(string filePath)
         {
             //Se o caminho do arquivo for nulo, sair do método

@@ -18,6 +18,7 @@ namespace WPF.App.Helpers
         //Not perfect but ok
         private static Regex _roomConfigurationSessions => new Regex(@"([0-2]\d{1}:[0-5]\d{1},?)+");
 
+        //Dicionário de identificação de comandos e os tipos
         private static Dictionary<Regex, CommandType> _commandsValidations = new Dictionary<Regex, CommandType>
         {
             { new Regex(@"^simular$", RegexOptions.IgnoreCase), CommandType.Simulate },
@@ -54,7 +55,13 @@ namespace WPF.App.Helpers
             return true;
         }
 
-        //Valida os comandos do devTools
+        #region DevTools
+        /// <summary>
+        /// Valida os comandos do devTools
+        /// </summary>
+        /// <param name="commandText">Texto dos comandos</param>
+        /// <param name="commands">Lista de comandos</param>
+        /// <returns></returns>
         public static ValidationResult ValidateDevToolsCommand(string commandText, out List<Command> commands)
         {
 
@@ -64,7 +71,9 @@ namespace WPF.App.Helpers
             var normalizedCommands = new List<Command>();
             commands = new List<Command>();
 
+            //Faz a validação e verifica se tem erros para retornar
 
+            //Verifica se há algum comando nulo
             if ((validation = IsCommandNull(commandText)).HasErrors)
             {
                 commands = normalizedCommands;
@@ -72,6 +81,7 @@ namespace WPF.App.Helpers
                 return result;
             }
 
+            //Verifica a sintáxe dos comandos se é valida
             if ((validation = IsCommandSyntaxValid(commandText, out rawCommands)).HasErrors)
             {
                 commands = normalizedCommands;
@@ -80,12 +90,14 @@ namespace WPF.App.Helpers
             }
 
 
+            //Verifica se os comandos são válidos
             if ((validation = AreCommandsValid(rawCommands, out normalizedCommands)).HasErrors)
             {
                 result.Errors.AddRange(validation.Errors);
                 return result;
             }
 
+            //Verifica se os comandos são válidos no contexto
             if ((validation = AreCommandsValidInContext(normalizedCommands)).HasErrors)
             {
                 result.Errors.AddRange(validation.Errors);
@@ -104,7 +116,7 @@ namespace WPF.App.Helpers
         {
             var validation = new ValidationResult();
 
-            var addFileValid = !commands.Any(c => c.Type ==CommandType.Update) || commands.Any(c=>c.Type==CommandType.FileInputPath);
+            var addFileValid = !commands.Any(c => c.Type == CommandType.Update) || commands.Any(c => c.Type == CommandType.FileInputPath);
 
             if (!addFileValid)
             {
@@ -113,20 +125,10 @@ namespace WPF.App.Helpers
                     Error = "Comandos para adicionar arquivo devem ser seguidos de comandos '-in {nome_arquivo}'"
                 });
             }
-           
-            //var simulateValid = !commands.Any(c => c.Type == CommandType.Simulate) || commands.Any(c => c.Type == CommandType.Log);
-
-            //if (!simulateValid)
-            //{
-            //    validation.Errors.Add(new ValidationError
-            //    {
-            //        Error = "Comandos para simular a execução devem ser seguidos de comandos '-log {arquivo|tela}'"
-            //    });
-            //}
 
             var hasInputFileCommands = commands.Any(c => c.Type == CommandType.FileInputPath);
             var hasUpdateCommand = commands.Any(c => c.Type == CommandType.Update);
-            var inputFileValid = !hasInputFileCommands || ( hasUpdateCommand && hasUpdateCommand);
+            var inputFileValid = !hasInputFileCommands || (hasUpdateCommand && hasUpdateCommand);
 
             if (!inputFileValid)
             {
@@ -211,9 +213,15 @@ namespace WPF.App.Helpers
             return validation;
         }
 
+
+        /// <summary>
+        /// Verifica se o comando tem caminho válido (aspas fechando) 
+        /// </summary>
+        /// <param name="commandText">texto do comando</param>
+        /// <returns>true se sim</returns>
         private static bool HasValidPath(string commandText)
         {
-            return commandText.Count(c => c == '\"')%2==0;
+            return commandText.Count(c => c == '\"') % 2 == 0;
         }
 
         /// <summary>
@@ -232,10 +240,14 @@ namespace WPF.App.Helpers
                     Error = "O comando não pode ser vazio",
 
                 });
-              
+
             }
             return validation;
         }
+
+
+
+        #endregion
 
 
     }
