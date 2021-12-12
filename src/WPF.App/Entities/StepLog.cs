@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using WPF.App.Public;
 
 namespace WPF.App.Entities
 {
@@ -25,5 +26,9 @@ namespace WPF.App.Entities
 
         //ThreadId
         public int ThreadId { get; set; }
+
+        //Escolha final do cliente
+
+        public CustomerResult Result { get; set; } = CustomerResult.GaveUp;
     }
 }

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using WPF.App.Helpers;
 using WPF.App.Interfaces;
+using WPF.App.Public;
 using Timer = System.Timers.Timer;
 
 namespace WPF.App.Entities
@@ -218,6 +219,7 @@ namespace WPF.App.Entities
 
             char[] steps;
             bool seatIsUnavailableAndCustomerGaveUp = false;
+            bool customerPaid = false;
 
             steps = _currentCustomer.Sequence.ToUpper().ToCharArray();
 
@@ -237,7 +239,7 @@ namespace WPF.App.Entities
                         break;
                     //Paga o assento
                     case 'P':
-                        Pay();
+                        customerPaid =  Pay();
                         break;
                     //Cancela a execução do cliente
                     case 'X':
@@ -263,7 +265,8 @@ namespace WPF.App.Entities
                 Start = _execution.CurrentGlobalTime,
                 Finish = _execution.CurrentGlobalTime + _currentCustomer.EstimatedTime,
                 TryCounter = GetTryCounterFromCustomer(_currentCustomer),
-                ThreadId = Id
+                ThreadId = Id,
+                Result = (customerPaid) ? CustomerResult.Confirm : CustomerResult.GaveUp
 
             });
 
@@ -295,7 +298,7 @@ namespace WPF.App.Entities
         /// <summary>
         /// Pagamento do cliente, deixa a cadeira indisponível
         /// </summary>
-        private void Pay()
+        private bool Pay()
         {
             //Muda o status na sessão e adiciona no relatório a informação na thread principal (necessidade WPF)
             Application.Current.Dispatcher.Invoke(() =>
@@ -308,6 +311,8 @@ namespace WPF.App.Entities
                 AddReportLog?.Invoke(this,
                     $"Cliente {_currentCustomer.ArrivalTime} Posto {Id} {_currentCustomer.SelectedSeat} {_customerSession.StartTime:HH:mm} confirmou.");
             });
+
+            return true;
 
         }
         /// <summary>

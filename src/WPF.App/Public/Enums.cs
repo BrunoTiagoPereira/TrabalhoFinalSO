@@ -33,4 +33,10 @@ namespace WPF.App.Public
         NoNeed
 
     }
+
+    public enum CustomerResult
+    {
+        Confirm,
+        GaveUp
+    }
 }

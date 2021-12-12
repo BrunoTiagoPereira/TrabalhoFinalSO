@@ -45,7 +45,7 @@ namespace WPF.App
         {
             var mainWindow = _serviceProvider.GetService<MainWindow>();
             //mainWindow.ActiveView = _serviceProvider.GetService<Menu>();
-            mainWindow.ActiveView = _serviceProvider.GetService<CommandLine>();
+            mainWindow.ActiveView = _serviceProvider.GetService<Menu>();
             mainWindow.Show();
         }
     }

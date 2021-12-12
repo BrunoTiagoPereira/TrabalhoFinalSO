@@ -85,7 +85,12 @@ namespace WPF.App.Views
         private void OnReportFinished(object? sender, EventArgs e)
         {
             Application.Current.Dispatcher.Invoke(GenerateReport);
+        }
 
+        private void ScrollToEnd()
+        {
+            CommandListBox.SelectedIndex = Commands.Count - 1;
+            CommandListBox.ScrollIntoView(CommandListBox.SelectedItem);
         }
 
 
@@ -96,8 +101,7 @@ namespace WPF.App.Views
                 string text = CommandInput.Text;
                 CommandInput.Text = "";
                 Commands.Add(new CommandLineText(){Text = text});
-                CommandListBox.SelectedIndex = Commands.Count - 1;
-                CommandListBox.ScrollIntoView(CommandListBox.SelectedItem);
+                
 
                 if (text.ToLower() == "clear")
                 {
@@ -118,6 +122,8 @@ namespace WPF.App.Views
                     UsedCommands.Push(text);
 
                 ExecuteCommand(text);
+
+                ScrollToEnd();
 
             }
             if (e.Key == Key.F1 && UsedCommands.Count>0)
@@ -256,10 +262,7 @@ namespace WPF.App.Views
 
         }
 
-        private void Totalize()
-        {
-            throw new NotImplementedException();
-        }
+       
 
 
         #region FileHandle
@@ -476,8 +479,10 @@ namespace WPF.App.Views
                 return false;
             }
 
+            ClearPreviousExecution();
 
-            EnableImport = false;
+
+            //EnableImport = false;
 
             ////Inclui os clientes na sessão
             Util.CreateSessionsSeats(_execution, Sessions, ColumnDimension, RowDimension);
@@ -493,6 +498,16 @@ namespace WPF.App.Views
 
             return true;
 
+        }
+
+        private void ClearPreviousExecution()
+        {
+            _execution.ProducerFinished = new List<Customer>();
+            _execution.ExecutionQueue = new List<Customer>();
+            _execution.ConsumersFinished = new List<Customer>();
+            _execution.CurrentConsumersTime = _execution?.CurrentConsumersTime?.Select(c => 0).ToList();
+            _execution.CurrentGlobalTime = 0;
+            _execution.Logs = new List<StepLog>();
         }
 
         /// <summary>
@@ -516,8 +531,35 @@ namespace WPF.App.Views
                 
                 return;
             }
-            await _report.Generate(OutputFileName);
+            var result =  await _report.Generate(OutputFileName);
 
+            Commands.Add(new CommandLineText
+            {
+                Color = (result.valid)?Util.Green:Util.Red,
+                Text = result.message,
+                ShowDevText = false
+            });
+
+            ScrollToEnd();
+
+        }
+
+        private void Totalize()
+        {
+            string confirmed = $"Clientes confirmados: {_execution.Logs.Count(l => l.Result == CustomerResult.Confirm)}";
+            string gaveUps = $"Clientes que desistiram: {_execution.Logs.Count(l => l.Result == CustomerResult.GaveUp)}";
+            Commands.Add(new CommandLineText
+            {
+                Color = Util.Green,
+                Text = confirmed,
+                ShowDevText = false
+            });
+            Commands.Add(new CommandLineText
+            {
+                Color = Util.Green,
+                Text = gaveUps,
+                ShowDevText = false
+            });
         }
 
 

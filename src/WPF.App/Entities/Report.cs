@@ -128,11 +128,11 @@ namespace WPF.App.Entities
                 _consumers.ForEach(c=>c.Finish());
                 _checkFinished.Stop();
                 WriteThreadsResult();
-                Monitor.Exit(_execution.Logs);
-                OnReportFinished?.Invoke(null,null);
-                return;
-            }
+                //Monitor.Exit(_execution.Logs);
+                //Monitor.Exit(_execution.ProducerFinished);
 
+                OnReportFinished?.Invoke(null,null);
+            }
             Monitor.Exit(_execution.Logs);
             Monitor.Exit(_execution.ProducerFinished);
         }
@@ -148,6 +148,7 @@ namespace WPF.App.Entities
         /// <param name="shouldWaitCustomerTime">esperar o tempo do cliente executando</param>
         public void Build(List<Customer> customers, int threads, bool shouldWaitForNextCustomer, bool shouldWaitCustomerTime)
         {
+            ClearPreviousExecution();
             //Cria o produtor
             CreateProducer(customers, shouldWaitForNextCustomer);
 
@@ -169,8 +170,9 @@ namespace WPF.App.Entities
             _execution.CurrentConsumersTime = new List<int>();
             for (int i = 0; i < threads; i++)
             {
-                this._consumers.Add(new Consumer(_execution,i+1, shouldWaitCustomerTime));
                 _execution.CurrentConsumersTime.Add(0);
+                this._consumers.Add(new Consumer(_execution,i+1, shouldWaitCustomerTime));
+               
             }
         }
 
@@ -217,27 +219,19 @@ namespace WPF.App.Entities
 
         }
 
-        public async Task Generate(string filePath)
+        public async Task<(bool valid, string message)> Generate(string filePath)
         {
             //Se o caminho do arquivo for nulo, sair do método
-            if (filePath == null) return;
+            if (filePath == null)
+                return (false, "Caminho inválido");
             try
             {
                 await File.WriteAllLinesAsync(filePath, ReportLines);
-
-                _notifyService.Alert(new Notification()
-                {
-                    Text = "Relatório salvo com sucesso!",
-                    Type = AlertType.Success
-                });
+                return (true, $"Relatório salvo com sucesso no caminho/arquivo '{filePath}'");
             }
             catch (Exception e)
             {
-                _notifyService.Alert(new Notification()
-                {
-                    Text = "Não foi possível salvar o arquivo!",
-                    Type = AlertType.Error
-                });
+                return (false, "Não foi possível salvar o arquivo!");
             }
         }
 
@@ -262,6 +256,16 @@ namespace WPF.App.Entities
 
 
         }
+        /// <summary>
+        /// Limpa a execução passada
+        /// </summary>
+        private void ClearPreviousExecution()
+        {
+            this._consumers.Clear();
+            this._producer = null;
+            this.ReportLines.Clear();
+        }
+
 
     }
 }
